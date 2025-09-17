@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import { PrismaClient, Role } from "../../generated/prisma";
 
 const prisma = new PrismaClient();
@@ -20,4 +21,68 @@ export const createUser = async (
       role,
     },
   });
+};
+
+export const findUserByEmail = async (email: string) => {
+  return prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+};
+
+export const comparePasswords = async (
+  password: string,
+  hashedPassword: string
+) => {
+  return bcrypt.compare(password, hashedPassword);
+};
+
+export const generatePasswordResetToken = async (email: string) => {
+  const user = await findUserByEmail(email);
+
+  // Security best practice: Do not reveal if the user exists or not
+  if (!user) {
+    return null;
+  }
+
+  // Generate a secure, URL-safe token
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const resetTokenExpires = new Date(Date.now() + 3600000); // 1 hour
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      resetPasswordToken: resetToken,
+      resetPasswordExpires: resetTokenExpires,
+    },
+  });
+
+  return resetToken;
+};
+
+export const resetUserPassword = async (token: string, newPassword: string) => {
+  const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+  const user = await prisma.user.findFirst({
+    where: {
+      resetPasswordToken: token,
+      resetPasswordExpires: { gt: new Date() }, // Check if token has not expired
+    },
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      password: hashedPassword,
+      resetPasswordToken: null, // Invalidate the token
+      resetPasswordExpires: null,
+    },
+  });
+
+  return user;
 };
