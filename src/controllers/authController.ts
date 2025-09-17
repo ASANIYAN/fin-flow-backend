@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { Request, Response } from "express";
+import nodemailerSendgrid from "nodemailer-sendgrid";
 
 import { Prisma, Role } from "../../generated/prisma";
 import { successResponse, errorResponse } from "../utils/message";
@@ -119,7 +120,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     const resetToken = await generatePasswordResetToken(email);
 
-    // Security best practice: Always send a success response to prevent user enumeration
     if (!resetToken) {
       return successResponse(
         res,
@@ -129,17 +129,11 @@ export const forgotPassword = async (req: Request, res: Response) => {
     }
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-
-    const transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    const personalEmail = process.env.EMAIL_USER as string;
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: personalEmail,
+      replyTo: personalEmail,
       to: email,
       subject: "Password Reset Request",
       html: `
@@ -150,7 +144,30 @@ export const forgotPassword = async (req: Request, res: Response) => {
       `,
     };
 
-    await transporter.sendMail(mailOptions);
+    // --- Primary Email Service (SendGrid) ---
+    try {
+      const sendgridTransporter = nodemailer.createTransport(
+        nodemailerSendgrid({
+          apiKey: process.env.SENDGRID_API_KEY as string,
+        })
+      );
+      await sendgridTransporter.sendMail(mailOptions);
+    } catch (sendgridError) {
+      console.error(
+        "SendGrid failed, falling back to Nodemailer/Gmail:",
+        sendgridError
+      );
+
+      // --- Fallback Email Service (Nodemailer/Gmail) ---
+      const fallbackTransporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: personalEmail,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+      await fallbackTransporter.sendMail(mailOptions);
+    }
 
     return successResponse(
       res,
