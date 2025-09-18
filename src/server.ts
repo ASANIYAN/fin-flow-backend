@@ -1,6 +1,6 @@
 import cors from "cors";
 import dotenv from "dotenv";
-import express, { Request, Response } from "express";
+import express from "express";
 import authRoutes from "./routes/authRoutes";
 
 dotenv.config();
@@ -13,11 +13,15 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 
-// Use Request and Response types
-app.get("/", (req: Request, res: Response) => {
+app.get("/", (req, res) => {
   res.status(200).json({ message: "Welcome to Finflow API!" });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
+
+// Export the app for testing purposes
+export default app;

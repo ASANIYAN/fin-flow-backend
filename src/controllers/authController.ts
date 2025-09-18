@@ -17,16 +17,24 @@ interface SignupRequestBody {
   role: Role;
   email: string;
   password: string;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   confirmPassword: string;
 }
 
 export const signup = async (req: Request, res: Response) => {
   try {
-    const { email, password, confirmPassword, fullName, role } =
+    const { email, password, confirmPassword, firstName, lastName, role } =
       req.body as SignupRequestBody;
 
-    if (!email || !password || !confirmPassword || !fullName || !role) {
+    if (
+      !email ||
+      !password ||
+      !confirmPassword ||
+      !firstName ||
+      !lastName ||
+      !role
+    ) {
       return errorResponse(res, 400, "All fields are required");
     }
 
@@ -38,12 +46,19 @@ export const signup = async (req: Request, res: Response) => {
       return errorResponse(res, 400, "Invalid role provided");
     }
 
-    const newUser = await createUser(email, password, fullName, role);
+    const newUser = await createUser(
+      email,
+      password,
+      firstName,
+      lastName,
+      role
+    );
 
     const userData = {
       id: newUser.id,
       email: newUser.email,
-      fullName: newUser.fullName,
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
       role: newUser.role,
     };
 
@@ -96,7 +111,8 @@ export const login = async (req: Request, res: Response) => {
     const userData = {
       id: user.id,
       email: user.email,
-      fullName: user.fullName,
+      firstName: user.firstName,
+      lastName: user.lastName,
       role: user.role,
     };
 

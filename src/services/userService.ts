@@ -8,7 +8,8 @@ const saltRounds = 10;
 export const createUser = async (
   email: string,
   password: string,
-  fullName: string,
+  firstName: string,
+  lastName: string,
   role: Role
 ) => {
   const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -17,7 +18,8 @@ export const createUser = async (
     data: {
       email,
       password: hashedPassword,
-      fullName,
+      firstName,
+      lastName,
       role,
     },
   });
