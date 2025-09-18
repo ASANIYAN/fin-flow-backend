@@ -1,4 +1,3 @@
-// Ensure we use the test database
 process.env.NODE_ENV = "test";
 process.env.TEST_DATABASE_URL = "file:./test.db";
 
