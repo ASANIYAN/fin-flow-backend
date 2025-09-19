@@ -115,8 +115,8 @@ export const verifyEmail = async (req: Request, res: Response) => {
 
     await verifyUser(user.id);
 
-    // Redirect the user to a success page on the frontend
-    return res.redirect(`${process.env.FRONTEND_URL}/email-verified`);
+    // Return success response for frontend to handle redirection
+    return successResponse(res, 200, "Email verified successfully");
   } catch (error) {
     console.error(error);
     return errorResponse(res, 500, "An unexpected error occurred", error);
