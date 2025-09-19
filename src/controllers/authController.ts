@@ -3,7 +3,13 @@ import nodemailer from "nodemailer";
 import { Request, Response } from "express";
 import nodemailerSendgrid from "nodemailer-sendgrid";
 
-import { Prisma, Role } from "../../generated/prisma";
+import { Role } from "../../generated/prisma";
+
+// Import Prisma for error handling - use the main client types since they're the same
+const Prisma =
+  process.env.NODE_ENV === "test"
+    ? require("../../generated/prisma-test").Prisma
+    : require("../../generated/prisma").Prisma;
 import { successResponse, errorResponse } from "../utils/message";
 import {
   comparePasswords,
@@ -90,7 +96,7 @@ export const signup = async (req: Request, res: Response) => {
     };
 
     return successResponse(res, 201, "User created successfully", userData);
-  } catch (error) {
+  } catch (error: any) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"

@@ -3,14 +3,14 @@ process.env.TEST_DATABASE_URL = "file:./test.db";
 
 import app from "../server";
 import request from "supertest";
-import { PrismaClient } from "../../generated/prisma";
-
-const prisma = new PrismaClient();
+import { prisma } from "../services/userService";
 
 describe("Authentication Endpoints", () => {
   beforeEach(async () => {
     // Clean up test data before each test
     await prisma.user.deleteMany({});
+    // Wait a bit to ensure cleanup is complete
+    await new Promise((resolve) => setTimeout(resolve, 100));
   });
 
   afterAll(async () => {

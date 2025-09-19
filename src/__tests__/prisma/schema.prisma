@@ -3,7 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../../../generated/prisma"
+  output   = "../../../generated/prisma-test"
 }
 
 // Test database - uses SQLite for fast, isolated testing

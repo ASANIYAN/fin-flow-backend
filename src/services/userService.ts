@@ -1,9 +1,13 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import { PrismaClient, Role } from "../../generated/prisma";
+import { PrismaClient } from "../lib/prisma";
+import { Role } from "../../generated/prisma";
 
 const prisma = new PrismaClient();
 const saltRounds = 10;
+
+// Export prisma instance for testing
+export { prisma };
 
 export const createUser = async (
   email: string,

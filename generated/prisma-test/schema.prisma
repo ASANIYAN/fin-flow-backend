@@ -1,0 +1,38 @@
+// Test-specific Prisma schema file
+// This schema is identical to the main one but uses SQLite for testing
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../generated/prisma-test"
+}
+
+// Test database - uses SQLite for fast, isolated testing
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String  @id @default(uuid())
+  email           String  @unique
+  password        String
+  firstName       String
+  lastName        String
+  role            Role    @default(BORROWER) // New field for user roles
+  isEmailVerified Boolean @default(false)
+
+  emailVerifiedAt   DateTime?
+  verificationToken String?   @unique
+
+  // Fields for password reset functionality
+  resetPasswordToken   String?   @unique
+  resetPasswordExpires DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  BORROWER
+  LENDER
+}
