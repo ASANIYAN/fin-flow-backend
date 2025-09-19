@@ -30,9 +30,10 @@ const options: Options = {
           required: ["id", "email", "firstName", "lastName", "role"],
           properties: {
             id: {
-              type: "integer",
-              description: "User unique identifier",
-              example: 1,
+              type: "string",
+              format: "uuid",
+              description: "User unique identifier (UUID)",
+              example: "123e4567-e89b-12d3-a456-426614174000",
             },
             email: {
               type: "string",

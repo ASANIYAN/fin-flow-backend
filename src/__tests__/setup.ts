@@ -22,7 +22,7 @@ export default async () => {
 
     // Push the schema to create the database structure using SQLite
     execSync(
-      `DATABASE_URL="file:./test.db" npx prisma db push --schema=${testSchemaPath} --skip-generate`,
+      `DATABASE_URL="file:./test.db" npx prisma db push --schema=${testSchemaPath} --skip-generate --accept-data-loss`,
       {
         stdio: "inherit",
       }

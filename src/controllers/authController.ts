@@ -9,8 +9,10 @@ import {
   comparePasswords,
   createUser,
   findUserByEmail,
+  findUserByVerificationToken,
   generatePasswordResetToken,
   resetUserPassword,
+  verifyUser,
 } from "../services/userService";
 
 interface SignupRequestBody {
@@ -54,6 +56,31 @@ export const signup = async (req: Request, res: Response) => {
       role
     );
 
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${newUser.verificationToken}`;
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER as string,
+      to: newUser.email,
+      subject: "Verify Your Email Address",
+      html: `<p>Please verify your email by clicking the following link:</p>
+             <a href="${verificationUrl}">Verify Email</a>`,
+    };
+
+    // Use your email transporter logic (SendGrid fallback)
+    try {
+      const sendgridTransporter = nodemailer.createTransport(
+        nodemailerSendgrid({ apiKey: process.env.SENDGRID_API_KEY as string })
+      );
+      await sendgridTransporter.sendMail(mailOptions);
+    } catch (sendgridError) {
+      console.error("SendGrid failed, falling back:", sendgridError);
+      const fallbackTransporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+      });
+      await fallbackTransporter.sendMail(mailOptions);
+    }
+
     const userData = {
       id: newUser.id,
       email: newUser.email,
@@ -71,6 +98,26 @@ export const signup = async (req: Request, res: Response) => {
       return errorResponse(res, 409, "Email already in use");
     }
 
+    console.error(error);
+    return errorResponse(res, 500, "An unexpected error occurred", error);
+  }
+};
+
+export const verifyEmail = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+
+    const user = await findUserByVerificationToken(token);
+
+    if (!user) {
+      return errorResponse(res, 400, "Invalid or expired verification token.");
+    }
+
+    await verifyUser(user.id);
+
+    // Redirect the user to a success page on the frontend
+    return res.redirect(`${process.env.FRONTEND_URL}/email-verified`);
+  } catch (error) {
     console.error(error);
     return errorResponse(res, 500, "An unexpected error occurred", error);
   }

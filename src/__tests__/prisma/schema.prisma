@@ -13,13 +13,16 @@ datasource db {
 }
 
 model User {
-  id                      Int      @id @default(autoincrement())
+  id                      String   @id @default(uuid())
   email                   String   @unique
   password                String
   firstName               String
   lastName                String
   role                    Role     @default(BORROWER) // New field for user roles
   isEmailVerified         Boolean  @default(false)
+  
+  emailVerifiedAt       DateTime?
+  verificationToken     String?   @unique
   
   // Fields for password reset functionality
   resetPasswordToken      String?  @unique

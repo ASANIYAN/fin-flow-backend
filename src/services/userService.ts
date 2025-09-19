@@ -13,6 +13,7 @@ export const createUser = async (
   role: Role
 ) => {
   const hashedPassword = await bcrypt.hash(password, saltRounds);
+  const verificationToken = crypto.randomBytes(32).toString("hex");
 
   return prisma.user.create({
     data: {
@@ -21,6 +22,28 @@ export const createUser = async (
       firstName,
       lastName,
       role,
+      verificationToken,
+    },
+  });
+};
+
+export const findUserByVerificationToken = async (token: string) => {
+  return prisma.user.findUnique({
+    where: {
+      verificationToken: token,
+    },
+  });
+};
+
+export const verifyUser = async (userId: string) => {
+  return prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
+      verificationToken: null, // Remove the token after successful verification
     },
   });
 };
