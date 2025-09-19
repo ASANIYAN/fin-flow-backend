@@ -1,7 +1,5 @@
 import jwt from "jsonwebtoken";
-import nodemailer from "nodemailer";
 import { Request, Response } from "express";
-import nodemailerSendgrid from "nodemailer-sendgrid";
 
 import { Role } from "../../generated/prisma";
 
@@ -11,6 +9,7 @@ const Prisma =
     ? require("../../generated/prisma-test").Prisma
     : require("../../generated/prisma").Prisma;
 import { successResponse, errorResponse } from "../utils/message";
+import { sendEmail } from "../utils/emailService";
 import {
   comparePasswords,
   createUser,
@@ -29,6 +28,40 @@ interface SignupRequestBody {
   lastName: string;
   confirmPassword: string;
 }
+
+export const sendVerificationEmail = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return errorResponse(res, 400, "Email is required");
+    }
+
+    const user = await findUserByEmail(email);
+
+    if (!user) {
+      return errorResponse(res, 404, "User not found");
+    }
+
+    if (user.isEmailVerified) {
+      return errorResponse(res, 400, "Email is already verified");
+    }
+
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${user.verificationToken}`;
+
+    await sendEmail({
+      to: user.email,
+      subject: "Verify Your Email Address",
+      html: `<p>Please verify your email by clicking the following link:</p>
+             <a href="${verificationUrl}">Verify Email</a>`,
+    });
+
+    return successResponse(res, 200, "Verification email sent successfully");
+  } catch (error) {
+    console.error(error);
+    return errorResponse(res, 500, "An unexpected error occurred", error);
+  }
+};
 
 export const signup = async (req: Request, res: Response) => {
   try {
@@ -62,36 +95,22 @@ export const signup = async (req: Request, res: Response) => {
       role
     );
 
+    // Send verification email
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${newUser.verificationToken}`;
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER as string,
+    await sendEmail({
       to: newUser.email,
       subject: "Verify Your Email Address",
       html: `<p>Please verify your email by clicking the following link:</p>
              <a href="${verificationUrl}">Verify Email</a>`,
-    };
-
-    // Use your email transporter logic (SendGrid fallback)
-    try {
-      const sendgridTransporter = nodemailer.createTransport(
-        nodemailerSendgrid({ apiKey: process.env.SENDGRID_API_KEY as string })
-      );
-      await sendgridTransporter.sendMail(mailOptions);
-    } catch (sendgridError) {
-      console.error("SendGrid failed, falling back:", sendgridError);
-      const fallbackTransporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-      });
-      await fallbackTransporter.sendMail(mailOptions);
-    }
+    });
 
     const userData = {
       id: newUser.id,
       email: newUser.email,
       firstName: newUser.firstName,
       lastName: newUser.lastName,
+      isEmailVerified: newUser.isEmailVerified,
       role: newUser.role,
     };
 
@@ -154,6 +173,15 @@ export const login = async (req: Request, res: Response) => {
       return errorResponse(res, 401, "Invalid email or password");
     }
 
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+      return errorResponse(
+        res,
+        403,
+        "Please verify your email address before logging in"
+      );
+    }
+
     // Generate JWT
     const token = jwt.sign(
       { userId: user.id, role: user.role },
@@ -167,6 +195,7 @@ export const login = async (req: Request, res: Response) => {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
+      isEmailVerified: user.isEmailVerified,
     };
 
     return successResponse(res, 200, "Login successful", {
@@ -198,11 +227,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
     }
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${email}`;
-    const personalEmail = process.env.EMAIL_USER as string;
 
-    const mailOptions = {
-      from: personalEmail,
-      replyTo: personalEmail,
+    await sendEmail({
       to: email,
       subject: "Password Reset Request",
       html: `
@@ -211,32 +237,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
         <a href="${resetUrl}">Reset Password</a>
         <p>This link will expire in 1 hour.</p>
       `,
-    };
-
-    // --- Primary Email Service (SendGrid) ---
-    try {
-      const sendgridTransporter = nodemailer.createTransport(
-        nodemailerSendgrid({
-          apiKey: process.env.SENDGRID_API_KEY as string,
-        })
-      );
-      await sendgridTransporter.sendMail(mailOptions);
-    } catch (sendgridError) {
-      console.error(
-        "SendGrid failed, falling back to Nodemailer/Gmail:",
-        sendgridError
-      );
-
-      // --- Fallback Email Service (Nodemailer/Gmail) ---
-      const fallbackTransporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: personalEmail,
-          pass: process.env.EMAIL_PASS,
-        },
-      });
-      await fallbackTransporter.sendMail(mailOptions);
-    }
+    });
 
     return successResponse(
       res,

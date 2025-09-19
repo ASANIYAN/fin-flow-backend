@@ -3,6 +3,7 @@ import {
   forgotPassword,
   login,
   resetPassword,
+  sendVerificationEmail,
   signup,
   verifyEmail,
 } from "../controllers/authController";
@@ -151,6 +152,47 @@ router.post("/login", login);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get("/verify-email/:token", verifyEmail);
+
+/**
+ * @swagger
+ * /api/auth/resend-verification:
+ *   post:
+ *     summary: Resend email verification link
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "john.doe@example.com"
+ *     responses:
+ *       200:
+ *         description: Verification email sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       400:
+ *         description: Email is required or email is already verified
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post("/resend-verification", sendVerificationEmail);
 
 /**
  * @swagger
