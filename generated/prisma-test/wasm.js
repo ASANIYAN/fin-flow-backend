@@ -101,8 +101,56 @@ exports.Prisma.UserScalarFieldEnum = {
   verificationToken: 'verificationToken',
   resetPasswordToken: 'resetPasswordToken',
   resetPasswordExpires: 'resetPasswordExpires',
+  balance: 'balance',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.LoanScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  description: 'description',
+  amountRequested: 'amountRequested',
+  amountFunded: 'amountFunded',
+  interestRate: 'interestRate',
+  duration: 'duration',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  borrowerId: 'borrowerId'
+};
+
+exports.Prisma.EmailVerificationTokenScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  token: 'token',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  userId: 'userId'
+};
+
+exports.Prisma.PasswordResetTokenScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  token: 'token',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  userId: 'userId'
+};
+
+exports.Prisma.TransactionScalarFieldEnum = {
+  id: 'id',
+  type: 'type',
+  amount: 'amount',
+  status: 'status',
+  reference: 'reference',
+  description: 'description',
+  paymentMethod: 'paymentMethod',
+  metadata: 'metadata',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  userId: 'userId',
+  loanId: 'loanId'
 };
 
 exports.Prisma.SortOrder = {
@@ -110,17 +158,59 @@ exports.Prisma.SortOrder = {
   desc: 'desc'
 };
 
+exports.Prisma.NullableJsonNullValueInput = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull
+};
+
 exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
+};
+
+exports.Prisma.JsonNullValueFilter = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull,
+  AnyNull: Prisma.AnyNull
+};
+
+exports.Prisma.QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
 };
 exports.Role = exports.$Enums.Role = {
   BORROWER: 'BORROWER',
   LENDER: 'LENDER'
 };
 
+exports.LoanStatus = exports.$Enums.LoanStatus = {
+  PENDING: 'PENDING',
+  FUNDING: 'FUNDING',
+  FUNDED: 'FUNDED',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED'
+};
+
+exports.TransactionType = exports.$Enums.TransactionType = {
+  DEPOSIT: 'DEPOSIT',
+  WITHDRAWAL: 'WITHDRAWAL',
+  LOAN_FUNDING: 'LOAN_FUNDING',
+  LOAN_REPAYMENT: 'LOAN_REPAYMENT'
+};
+
+exports.TransactionStatus = exports.$Enums.TransactionStatus = {
+  PENDING: 'PENDING',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+  CANCELLED: 'CANCELLED'
+};
+
 exports.Prisma.ModelName = {
-  User: 'User'
+  User: 'User',
+  Loan: 'Loan',
+  EmailVerificationToken: 'EmailVerificationToken',
+  PasswordResetToken: 'PasswordResetToken',
+  Transaction: 'Transaction'
 };
 /**
  * Create the Client
@@ -170,13 +260,13 @@ const config = {
       }
     }
   },
-  "inlineSchema": "// Test-specific Prisma schema file\n// This schema is identical to the main one but uses SQLite for testing\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../../../generated/prisma-test\"\n}\n\n// Test database - uses SQLite for fast, isolated testing\ndatasource db {\n  provider = \"sqlite\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel User {\n  id              String  @id @default(uuid())\n  email           String  @unique\n  password        String\n  firstName       String\n  lastName        String\n  role            Role    @default(BORROWER) // New field for user roles\n  isEmailVerified Boolean @default(false)\n\n  emailVerifiedAt   DateTime?\n  verificationToken String?   @unique\n\n  // Fields for password reset functionality\n  resetPasswordToken   String?   @unique\n  resetPasswordExpires DateTime?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n}\n\nenum Role {\n  BORROWER\n  LENDER\n}\n",
-  "inlineSchemaHash": "801bad67f23c8298d1326e8294892a26f781d97a7e94662fdf863d9c5049a9a1",
+  "inlineSchema": "// Test-specific Prisma schema file\n// This schema is identical to the main one but uses SQLite for testing\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../../../generated/prisma-test\"\n}\n\n// Test database - uses SQLite for fast, isolated testing\ndatasource db {\n  provider = \"sqlite\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel User {\n  id                   String    @id @default(uuid())\n  email                String    @unique\n  password             String\n  firstName            String\n  lastName             String\n  role                 Role      @default(BORROWER)\n  isEmailVerified      Boolean   @default(false)\n  emailVerifiedAt      DateTime?\n  verificationToken    String?   @unique\n  resetPasswordToken   String?   @unique\n  resetPasswordExpires DateTime?\n  balance              Decimal   @default(0)\n  createdAt            DateTime  @default(now())\n  updatedAt            DateTime  @updatedAt\n\n  // A Lender's funded loans\n  fundedLoans Loan[] @relation(\"FundedLoans\")\n\n  // A Borrower's loan applications\n  loanApplications Loan[]\n\n  // Email verification tokens\n  emailVerificationTokens EmailVerificationToken[]\n\n  // Password reset tokens\n  passwordResetTokens PasswordResetToken[]\n\n  // Transactions\n  transactions Transaction[]\n}\n\nenum Role {\n  BORROWER\n  LENDER\n}\n\nmodel Loan {\n  id              String     @id @default(uuid())\n  title           String\n  description     String?\n  amountRequested Decimal\n  amountFunded    Decimal    @default(0)\n  interestRate    Decimal\n  duration        Int // in months\n  status          LoanStatus @default(PENDING)\n  createdAt       DateTime   @default(now())\n  updatedAt       DateTime   @updatedAt\n\n  // Link to the user who created the loan (the Borrower)\n  borrower   User   @relation(fields: [borrowerId], references: [id])\n  borrowerId String\n\n  // Link to the user who funded the loan (the Lender)\n  fundedBy User[] @relation(\"FundedLoans\")\n\n  // Transactions related to this loan\n  transactions Transaction[]\n}\n\nenum LoanStatus {\n  PENDING\n  FUNDING\n  FUNDED\n  COMPLETED\n  CANCELLED\n}\n\nmodel EmailVerificationToken {\n  id        String   @id @default(uuid())\n  email     String\n  token     String   @unique\n  expiresAt DateTime\n  createdAt DateTime @default(now())\n\n  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)\n  userId String\n}\n\nmodel PasswordResetToken {\n  id        String   @id @default(uuid())\n  email     String\n  token     String   @unique\n  expiresAt DateTime\n  createdAt DateTime @default(now())\n\n  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)\n  userId String\n}\n\nmodel Transaction {\n  id            String            @id @default(uuid())\n  type          TransactionType\n  amount        Decimal\n  status        TransactionStatus @default(PENDING)\n  reference     String?           @unique\n  description   String?\n  paymentMethod String?\n  metadata      Json?\n  createdAt     DateTime          @default(now())\n  updatedAt     DateTime          @updatedAt\n\n  user   User   @relation(fields: [userId], references: [id])\n  userId String\n\n  // Optional loan relation\n  loan   Loan?   @relation(fields: [loanId], references: [id])\n  loanId String?\n}\n\nenum TransactionType {\n  DEPOSIT\n  WITHDRAWAL\n  LOAN_FUNDING\n  LOAN_REPAYMENT\n}\n\nenum TransactionStatus {\n  PENDING\n  COMPLETED\n  FAILED\n  CANCELLED\n}\n",
+  "inlineSchemaHash": "9cb2303aa72b0e34bdcb91bafebd024794b44ab26fa54459b43cf3987dc852a8",
   "copyEngine": true
 }
 config.dirname = '/'
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"User\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"password\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"firstName\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"lastName\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"role\",\"kind\":\"enum\",\"type\":\"Role\"},{\"name\":\"isEmailVerified\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"emailVerifiedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"verificationToken\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"resetPasswordToken\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"resetPasswordExpires\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"User\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"password\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"firstName\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"lastName\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"role\",\"kind\":\"enum\",\"type\":\"Role\"},{\"name\":\"isEmailVerified\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"emailVerifiedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"verificationToken\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"resetPasswordToken\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"resetPasswordExpires\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"balance\",\"kind\":\"scalar\",\"type\":\"Decimal\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"fundedLoans\",\"kind\":\"object\",\"type\":\"Loan\",\"relationName\":\"FundedLoans\"},{\"name\":\"loanApplications\",\"kind\":\"object\",\"type\":\"Loan\",\"relationName\":\"LoanToUser\"},{\"name\":\"emailVerificationTokens\",\"kind\":\"object\",\"type\":\"EmailVerificationToken\",\"relationName\":\"EmailVerificationTokenToUser\"},{\"name\":\"passwordResetTokens\",\"kind\":\"object\",\"type\":\"PasswordResetToken\",\"relationName\":\"PasswordResetTokenToUser\"},{\"name\":\"transactions\",\"kind\":\"object\",\"type\":\"Transaction\",\"relationName\":\"TransactionToUser\"}],\"dbName\":null},\"Loan\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"amountRequested\",\"kind\":\"scalar\",\"type\":\"Decimal\"},{\"name\":\"amountFunded\",\"kind\":\"scalar\",\"type\":\"Decimal\"},{\"name\":\"interestRate\",\"kind\":\"scalar\",\"type\":\"Decimal\"},{\"name\":\"duration\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"status\",\"kind\":\"enum\",\"type\":\"LoanStatus\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"borrower\",\"kind\":\"object\",\"type\":\"User\",\"relationName\":\"LoanToUser\"},{\"name\":\"borrowerId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"fundedBy\",\"kind\":\"object\",\"type\":\"User\",\"relationName\":\"FundedLoans\"},{\"name\":\"transactions\",\"kind\":\"object\",\"type\":\"Transaction\",\"relationName\":\"LoanToTransaction\"}],\"dbName\":null},\"EmailVerificationToken\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"token\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"expiresAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"user\",\"kind\":\"object\",\"type\":\"User\",\"relationName\":\"EmailVerificationTokenToUser\"},{\"name\":\"userId\",\"kind\":\"scalar\",\"type\":\"String\"}],\"dbName\":null},\"PasswordResetToken\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"token\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"expiresAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"user\",\"kind\":\"object\",\"type\":\"User\",\"relationName\":\"PasswordResetTokenToUser\"},{\"name\":\"userId\",\"kind\":\"scalar\",\"type\":\"String\"}],\"dbName\":null},\"Transaction\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"type\",\"kind\":\"enum\",\"type\":\"TransactionType\"},{\"name\":\"amount\",\"kind\":\"scalar\",\"type\":\"Decimal\"},{\"name\":\"status\",\"kind\":\"enum\",\"type\":\"TransactionStatus\"},{\"name\":\"reference\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"paymentMethod\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"metadata\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"user\",\"kind\":\"object\",\"type\":\"User\",\"relationName\":\"TransactionToUser\"},{\"name\":\"userId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"loan\",\"kind\":\"object\",\"type\":\"Loan\",\"relationName\":\"LoanToTransaction\"},{\"name\":\"loanId\",\"kind\":\"scalar\",\"type\":\"String\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
 defineDmmfProperty(exports.Prisma, config.runtimeDataModel)
 config.engineWasm = {
   getRuntime: async () => require('./query_engine_bg.js'),

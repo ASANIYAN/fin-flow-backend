@@ -17,27 +17,82 @@ datasource db {
 
 
 model User {
-  id                      String   @id @default(uuid())
-  email                   String   @unique
-  password                String
-  firstName               String
-  lastName                String
-  role                    Role     @default(BORROWER) // New field for user roles
+  id               String      @id @default(uuid())
+  email            String      @unique
+  firstName        String
+  lastName         String
+  password         String
+  role             Role
+  isEmailVerified  Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  
+  balance          Decimal     @default(0) // The user's wallet balance
 
-  isEmailVerified         Boolean  @default(false)
-   emailVerifiedAt       DateTime?
-   verificationToken     String?   @unique
-   
-  resetPasswordToken      String?  @unique
-  resetPasswordExpires    DateTime?
-
-
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  loanApplications Loan[]
+  fundedLoans      Loan[]      @relation("FundedLoans")
+  transactions     Transaction[]
 }
 
 enum Role {
   BORROWER
   LENDER
+}
+
+
+model Transaction {
+  id            String          @id @default(uuid())
+  amount        Decimal
+  type          TransactionType // e.g., DEPOSIT, DEBIT, DISBURSEMENT
+  description   String?
+  createdAt     DateTime        @default(now())
+
+  // Link to the user who owns the transaction
+  user          User?           @relation(fields: [userId], references: [id])
+  userId        String?
+  
+  // Link to the loan involved in the transaction
+  loan          Loan?           @relation(fields: [loanId], references: [id])
+  loanId        String?
+}
+
+
+enum TransactionType {
+  DEPOSIT
+  FUNDING_DEBIT   // Lender's wallet debit when funding a loan
+  FUNDING_CREDIT  // Credit to the loan's balance (not a user's wallet)
+  DISBURSEMENT    // Borrower's wallet credit when a loan is funded
+  WITHDRAWAL
+}
+
+
+model Loan {
+  id              String   @id @default(uuid())
+  title           String
+  description     String?
+  amountRequested Decimal
+  amountFunded    Decimal  @default(0)
+  interestRate    Decimal
+  duration        Int // in months
+  status          LoanStatus @default(PENDING)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Link to the user who created the loan (the Borrower)
+  borrower      User      @relation(fields: [borrowerId], references: [id])
+  borrowerId    String
+
+  // Link to the user who funded the loan (the Lender)
+  fundedBy      User[]    @relation("FundedLoans")
+
+  Transaction Transaction[]
+}
+
+enum LoanStatus {
+  PENDING
+  FUNDING
+  FUNDED
+  COMPLETED
+  CANCELLED
 }
 

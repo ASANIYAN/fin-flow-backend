@@ -60,6 +60,14 @@ export const findUserByEmail = async (email: string) => {
   });
 };
 
+export const findUserById = async (id: string) => {
+  return prisma.user.findUnique({
+    where: {
+      id,
+    },
+  });
+};
+
 export const comparePasswords = async (
   password: string,
   hashedPassword: string
@@ -114,4 +122,125 @@ export const resetUserPassword = async (token: string, newPassword: string) => {
   });
 
   return user;
+};
+
+export const getUserProfileService = async (userId: string) => {
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+    // We only want to select non-sensitive fields for the public profile
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      role: true,
+      isEmailVerified: true,
+      createdAt: true,
+    },
+  });
+
+  return user;
+};
+
+export const updateUserProfileService = async (
+  userId: string,
+  updateData: any
+) => {
+  // You should validate updateData here to ensure a user can only update
+  // specific fields (e.g., firstName, lastName) and not sensitive ones like
+  // email or password without proper verification.
+  const validUpdateFields: any = {};
+  if (updateData.firstName) validUpdateFields.firstName = updateData.firstName;
+  if (updateData.lastName) validUpdateFields.lastName = updateData.lastName;
+
+  // We should also check for an empty object to avoid unnecessary database calls
+  if (Object.keys(validUpdateFields).length === 0) {
+    throw new Error("No valid fields provided for update.");
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: validUpdateFields,
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      role: true,
+      isEmailVerified: true,
+      createdAt: true,
+    },
+  });
+
+  return updatedUser;
+};
+
+export const getUserTransactionsService = async (
+  userId: string,
+  page: number = 1,
+  pageSize: number = 10,
+  q?: string
+) => {
+  // Calculate skip for pagination
+  const skip = (page - 1) * pageSize;
+
+  // Build the dynamic 'where' clause for filtering and searching
+  const where: any = {
+    userId: userId,
+  };
+
+  if (q) {
+    const searchTermUpper = q.toUpperCase();
+    const orConditions: any[] = [{ description: { contains: q } }];
+
+    // Only add type/status filters if the search term matches valid enum values
+    const validTypes = [
+      "DEPOSIT",
+      "WITHDRAWAL",
+      "LOAN_FUNDING",
+      "LOAN_REPAYMENT",
+    ];
+    const validStatuses = ["PENDING", "COMPLETED", "FAILED"];
+
+    if (validTypes.includes(searchTermUpper)) {
+      orConditions.push({ type: { equals: searchTermUpper } });
+    }
+
+    if (validStatuses.includes(searchTermUpper)) {
+      orConditions.push({ status: { equals: searchTermUpper } });
+    }
+
+    // Add loan title search if available
+    orConditions.push({ loan: { title: { contains: q } } });
+
+    where.OR = orConditions;
+  }
+
+  // Fetch the paginated and filtered transactions
+  const transactions = await prisma.transaction.findMany({
+    where,
+    skip,
+    take: pageSize,
+    // We can also include related data for better context in the response
+    include: {
+      loan: {
+        select: {
+          title: true, // Only include the loan title for context
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc", // Sort by most recent transactions first
+    },
+  });
+
+  // Get the total count of transactions for pagination (without skip/take)
+  const totalCount = await prisma.transaction.count({ where });
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  return { transactions, totalCount, totalPages };
 };
