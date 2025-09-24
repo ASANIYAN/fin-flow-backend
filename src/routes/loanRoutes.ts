@@ -22,21 +22,157 @@ const router = Router();
  *     tags: [Loans]
  *     security:
  *       - BearerAuth: []
- *     description: Returns dashboard data based on user role (BORROWER or LENDER)
+ *     description: Returns dashboard data based on user role. Borrowers receive loan application statistics and active loans, while lenders receive investment summaries and new loan listings.
  *     responses:
  *       200:
  *         description: Dashboard data retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/ApiResponse'
+ *               oneOf:
  *                 - type: object
+ *                   title: Borrower Dashboard Response
  *                   properties:
+ *                     success:
+ *                       type: boolean
+ *                       example: true
+ *                     message:
+ *                       type: string
+ *                       example: "Borrower dashboard data fetched successfully"
  *                     data:
- *                       oneOf:
- *                         - $ref: '#/components/schemas/BorrowerDashboard'
- *                         - $ref: '#/components/schemas/LenderDashboard'
+ *                       type: object
+ *                       properties:
+ *                         totalApplications:
+ *                           type: integer
+ *                           description: Total number of loan applications submitted by borrower
+ *                           example: 5
+ *                         pendingApplications:
+ *                           type: integer
+ *                           description: Number of loan applications awaiting approval or funding
+ *                           example: 2
+ *                         activeLoans:
+ *                           type: array
+ *                           description: List of currently active loans (funded or being funded)
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                                 example: "123e4567-e89b-12d3-a456-426614174001"
+ *                               title:
+ *                                 type: string
+ *                                 example: "Business Expansion Loan"
+ *                               description:
+ *                                 type: string
+ *                                 nullable: true
+ *                                 example: "Loan for expanding my restaurant business"
+ *                               amountRequested:
+ *                                 type: number
+ *                                 format: decimal
+ *                                 example: 50000
+ *                               amountFunded:
+ *                                 type: number
+ *                                 format: decimal
+ *                                 example: 35000
+ *                               interestRate:
+ *                                 type: number
+ *                                 format: decimal
+ *                                 example: 12.5
+ *                               duration:
+ *                                 type: integer
+ *                                 description: Loan duration in months
+ *                                 example: 24
+ *                               status:
+ *                                 type: string
+ *                                 enum: [PENDING, FUNDING, FUNDED, COMPLETED, CANCELLED]
+ *                                 example: "FUNDING"
+ *                               createdAt:
+ *                                 type: string
+ *                                 format: date-time
+ *                                 example: "2024-09-15T10:30:00.000Z"
+ *                               updatedAt:
+ *                                 type: string
+ *                                 format: date-time
+ *                                 example: "2024-09-20T14:15:00.000Z"
+ *                 - type: object
+ *                   title: Lender Dashboard Response
+ *                   properties:
+ *                     success:
+ *                       type: boolean
+ *                       example: true
+ *                     message:
+ *                       type: string
+ *                       example: "Lender dashboard data fetched successfully"
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         investmentSummary:
+ *                           type: object
+ *                           description: Summary of lender's investment portfolio
+ *                           properties:
+ *                             totalInvested:
+ *                               type: number
+ *                               format: decimal
+ *                               description: Total amount invested across all loans
+ *                               example: 150000
+ *                             totalEarnings:
+ *                               type: number
+ *                               format: decimal
+ *                               description: Total estimated earnings from investments
+ *                               example: 7500
+ *                             activeInvestments:
+ *                               type: integer
+ *                               description: Number of active loan investments
+ *                               example: 8
+ *                         newListings:
+ *                           type: array
+ *                           description: Recent loan listings available for funding
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                                 example: "456f7890-e12c-34d5-b678-901234567890"
+ *                               title:
+ *                                 type: string
+ *                                 example: "Agricultural Equipment Purchase"
+ *                               description:
+ *                                 type: string
+ *                                 nullable: true
+ *                                 example: "Need funds to purchase farming equipment"
+ *                               amountRequested:
+ *                                 type: number
+ *                                 format: decimal
+ *                                 example: 75000
+ *                               amountFunded:
+ *                                 type: number
+ *                                 format: decimal
+ *                                 example: 0
+ *                               interestRate:
+ *                                 type: number
+ *                                 format: decimal
+ *                                 example: 15.0
+ *                               duration:
+ *                                 type: integer
+ *                                 description: Loan duration in months
+ *                                 example: 18
+ *                               status:
+ *                                 type: string
+ *                                 enum: [PENDING, FUNDING, FUNDED, COMPLETED, CANCELLED]
+ *                                 example: "PENDING"
+ *                               borrower:
+ *                                 type: string
+ *                                 description: Borrower's full name
+ *                                 example: "John Smith"
+ *                               progress:
+ *                                 type: number
+ *                                 format: decimal
+ *                                 description: Funding progress percentage (0-100)
+ *                                 example: 0
+ *                               createdAt:
+ *                                 type: string
+ *                                 format: date-time
+ *                                 example: "2024-09-22T08:45:00.000Z"
  *       401:
  *         description: Authentication required
  *         content:
