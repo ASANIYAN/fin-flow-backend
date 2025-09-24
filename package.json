@@ -9,7 +9,9 @@
     "build": "tsc",
     "postinstall": "npx prisma generate",
     "test": "NODE_ENV=test jest --runInBand",
-    "test:db:push": "NODE_ENV=test DATABASE_URL=file:./test.db npx prisma db push"
+    "test:db:push": "NODE_ENV=test DATABASE_URL=file:./test.db npx prisma db push",
+    "test:schema": "NODE_ENV=test jest schema-validation.test.ts",
+    "validate:schema": "./scripts/validate-schema.sh"
   },
   "keywords": [],
   "author": "",
