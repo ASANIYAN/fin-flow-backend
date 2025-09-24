@@ -24,6 +24,7 @@ model User {
   password         String
   role             Role
   isEmailVerified  Boolean     @default(false)
+  emailVerifiedAt  DateTime?   // Timestamp when email was verified
   verificationToken String?    @unique  // Token for email verification
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
