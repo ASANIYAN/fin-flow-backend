@@ -92,10 +92,10 @@ router.post("/signup", signup);
  *               email:
  *                 type: string
  *                 format: email
- *                 example: "john.doe@example.com"
+ *                 example: "fostogokka@necub.com"
  *               password:
  *                 type: string
- *                 example: "securePassword123"
+ *                 example: "Fostogokka123#&"
  *     responses:
  *       200:
  *         description: Login successful

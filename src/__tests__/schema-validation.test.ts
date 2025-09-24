@@ -165,7 +165,7 @@ describe("Schema Field Validation Tests", () => {
       const transactionTypes = [
         "DEPOSIT",
         "FUNDING_DEBIT",
-        "FUNDING_CREDIT", 
+        "FUNDING_CREDIT",
         "DISBURSEMENT",
         "WITHDRAWAL",
       ];
@@ -275,7 +275,7 @@ describe("Schema Field Validation Tests", () => {
       // Read both schema files and compare field definitions
       const mainSchemaPath = path.join(__dirname, "../../prisma/schema.prisma");
       const testSchemaPath = path.join(__dirname, "prisma/schema.prisma");
-      
+
       const mainSchema = fs.readFileSync(mainSchemaPath, "utf8");
       const testSchema = fs.readFileSync(testSchemaPath, "utf8");
 
@@ -314,7 +314,13 @@ describe("Schema Field Validation Tests", () => {
       });
 
       // Test LoanStatus enum values
-      const loanStatuses = ["PENDING", "FUNDING", "FUNDED", "COMPLETED", "CANCELLED"];
+      const loanStatuses = [
+        "PENDING",
+        "FUNDING",
+        "FUNDED",
+        "COMPLETED",
+        "CANCELLED",
+      ];
       loanStatuses.forEach((status) => {
         expect(() => {
           prisma.loan.update({
