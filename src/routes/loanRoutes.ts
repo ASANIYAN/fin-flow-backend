@@ -173,6 +173,82 @@ const router = Router();
  *                                 type: string
  *                                 format: date-time
  *                                 example: "2024-09-22T08:45:00.000Z"
+ *             examples:
+ *               borrower:
+ *                 summary: Borrower Dashboard Response
+ *                 description: Response when user has BORROWER role
+ *                 value:
+ *                   success: true
+ *                   message: "Borrower dashboard data fetched successfully"
+ *                   data:
+ *                     totalApplications: 5
+ *                     pendingApplications: 2
+ *                     activeLoans:
+ *                       - id: "123e4567-e89b-12d3-a456-426614174001"
+ *                         title: "Business Expansion Loan"
+ *                         description: "Loan for expanding my restaurant business"
+ *                         amountRequested: 50000
+ *                         amountFunded: 35000
+ *                         interestRate: 12.5
+ *                         duration: 24
+ *                         status: "FUNDING"
+ *                         createdAt: "2024-09-15T10:30:00.000Z"
+ *                         updatedAt: "2024-09-20T14:15:00.000Z"
+ *                       - id: "987f6543-e21d-34c5-b678-123456789012"
+ *                         title: "Equipment Purchase"
+ *                         description: "New machinery for production line"
+ *                         amountRequested: 75000
+ *                         amountFunded: 75000
+ *                         interestRate: 10.0
+ *                         duration: 36
+ *                         status: "FUNDED"
+ *                         createdAt: "2024-08-20T09:15:00.000Z"
+ *                         updatedAt: "2024-09-10T16:45:00.000Z"
+ *               lender:
+ *                 summary: Lender Dashboard Response
+ *                 description: Response when user has LENDER role
+ *                 value:
+ *                   success: true
+ *                   message: "Lender dashboard data fetched successfully"
+ *                   data:
+ *                     investmentSummary:
+ *                       totalInvested: 150000
+ *                       totalEarnings: 7500
+ *                       activeInvestments: 8
+ *                     newListings:
+ *                       - id: "456f7890-e12c-34d5-b678-901234567890"
+ *                         title: "Agricultural Equipment Purchase"
+ *                         description: "Need funds to purchase farming equipment"
+ *                         amountRequested: 75000
+ *                         amountFunded: 0
+ *                         interestRate: 15.0
+ *                         duration: 18
+ *                         status: "PENDING"
+ *                         borrower: "John Smith"
+ *                         progress: 0
+ *                         createdAt: "2024-09-22T08:45:00.000Z"
+ *                       - id: "789a1234-f56g-78h9-i012-345678901234"
+ *                         title: "Small Business Startup"
+ *                         description: "Launch a local bakery business"
+ *                         amountRequested: 25000
+ *                         amountFunded: 15000
+ *                         interestRate: 18.5
+ *                         duration: 12
+ *                         status: "FUNDING"
+ *                         borrower: "Maria Garcia"
+ *                         progress: 60
+ *                         createdAt: "2024-09-20T14:30:00.000Z"
+ *                       - id: "234b5678-c90d-12e3-f456-789012345678"
+ *                         title: "Medical Equipment Upgrade"
+ *                         description: "Upgrade clinic diagnostic equipment"
+ *                         amountRequested: 120000
+ *                         amountFunded: 0
+ *                         interestRate: 12.0
+ *                         duration: 48
+ *                         status: "PENDING"
+ *                         borrower: "Dr. James Wilson"
+ *                         progress: 0
+ *                         createdAt: "2024-09-21T11:15:00.000Z"
  *       401:
  *         description: Authentication required
  *         content:
