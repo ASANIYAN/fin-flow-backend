@@ -72,11 +72,13 @@ model Loan {
   id              String   @id @default(uuid())
   title           String
   description     String?
-  amountRequested Decimal
-  amountFunded    Decimal  @default(0)
-  interestRate    Decimal
-  duration        Int // in months
-  status          LoanStatus @default(PENDING)
+  amountRequested Decimal       @db.Decimal(10, 2)
+  amountFunded    Decimal       @default(0) @db.Decimal(10, 2)
+  interestRate    Decimal       @db.Decimal(5, 2)
+  duration        Int           // Duration value
+  durationUnit    DurationUnit  @default(MONTHS) // Duration unit (DAYS, WEEKS, MONTHS, YEARS)
+  totalInterest   Decimal       @db.Decimal(10, 2)
+  status          LoanStatus    @default(PENDING)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
@@ -96,5 +98,12 @@ enum LoanStatus {
   FUNDED
   COMPLETED
   CANCELLED
+}
+
+enum DurationUnit {
+  DAYS
+  WEEKS
+  MONTHS
+  YEARS
 }
 

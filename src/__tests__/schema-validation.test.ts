@@ -131,6 +131,7 @@ describe("Schema Field Validation Tests", () => {
         amountRequested: 10000,
         interestRate: 12.5,
         duration: 24,
+        totalInterest: 2500,
         borrowerId: "test-borrower-id",
       };
 
@@ -230,6 +231,7 @@ describe("Schema Field Validation Tests", () => {
             amountRequested: 1000,
             interestRate: 10,
             duration: 12,
+            totalInterest: 100,
             borrowerId: "borrower-id",
           },
         });

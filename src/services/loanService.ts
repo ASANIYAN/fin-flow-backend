@@ -1,11 +1,87 @@
 import { Prisma, PrismaClient, LoanStatus } from "../lib/prisma";
 
+// Utility function to convert duration to days for consistent calculations
+const convertDurationToDays = (duration: number, unit: string): number => {
+  switch (unit) {
+    case "DAYS":
+      return duration;
+    case "WEEKS":
+      return duration * 7;
+    case "MONTHS":
+      return duration * 30; // Approximate 30 days per month
+    case "YEARS":
+      return duration * 365; // Approximate 365 days per year
+    default:
+      return duration * 30; // Default to months if unit is invalid
+  }
+};
+
+// Utility function to convert duration to months for financial calculations
+const convertDurationToMonths = (duration: number, unit: string): number => {
+  switch (unit) {
+    case "DAYS":
+      return duration / 30; // Approximate
+    case "WEEKS":
+      return duration / 4.33; // Approximate 4.33 weeks per month
+    case "MONTHS":
+      return duration;
+    case "YEARS":
+      return duration * 12;
+    default:
+      return duration; // Default to months if unit is invalid
+  }
+};
+
+// Utility function to get human-readable duration string
+const formatDuration = (duration: number, unit: string): string => {
+  const unitMap = {
+    DAYS: duration === 1 ? "day" : "days",
+    WEEKS: duration === 1 ? "week" : "weeks",
+    MONTHS: duration === 1 ? "month" : "months",
+    YEARS: duration === 1 ? "year" : "years",
+  };
+  return `${duration} ${unitMap[unit as keyof typeof unitMap] || "months"}`;
+};
+
+// Utility function to calculate total interest based on amount, rate, duration and unit
+const calculateTotalInterest = (
+  amountRequested: number,
+  interestRate: number,
+  duration: number,
+  durationUnit: string
+): number => {
+  const annualRate = interestRate / 100;
+  let durationInYears: number;
+
+  switch (durationUnit) {
+    case "DAYS":
+      durationInYears = duration / 365;
+      break;
+    case "WEEKS":
+      durationInYears = duration / 52;
+      break;
+    case "MONTHS":
+      durationInYears = duration / 12;
+      break;
+    case "YEARS":
+      durationInYears = duration;
+      break;
+    default:
+      durationInYears = duration / 12; // Default to months
+  }
+
+  const totalInterest = amountRequested * annualRate * durationInYears;
+  // Return the result rounded to two decimal places for currency
+  return parseFloat(totalInterest.toFixed(2));
+};
+
 interface CreateLoanInput {
   title: string;
   description?: string | null;
   amountRequested: number;
   interestRate: number;
   duration: number;
+  durationUnit?: string;
   borrowerId: string;
 }
 
@@ -248,12 +324,22 @@ const formatLoanListings = (
  * @returns Created loan object
  */
 export const createLoanService = async (loanData: CreateLoanInput) => {
+  const durationUnit = (loanData.durationUnit as any) || "MONTHS";
+  const totalInterest = calculateTotalInterest(
+    loanData.amountRequested,
+    loanData.interestRate,
+    loanData.duration,
+    durationUnit
+  );
+
   const prismaLoanData: Prisma.LoanCreateInput = {
     title: loanData.title,
     description: loanData.description,
     amountRequested: loanData.amountRequested,
     interestRate: loanData.interestRate,
     duration: loanData.duration,
+    durationUnit: durationUnit,
+    totalInterest: totalInterest,
     borrower: {
       connect: { id: loanData.borrowerId },
     },

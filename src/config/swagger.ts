@@ -196,6 +196,8 @@ const options: Options = {
             "amountRequested",
             "interestRate",
             "duration",
+            "durationUnit",
+            "totalInterest",
             "status",
             "borrowerId",
           ],
@@ -236,8 +238,22 @@ const options: Options = {
             },
             duration: {
               type: "integer",
-              description: "Loan duration in months",
+              description:
+                "Loan duration value (interpreted based on durationUnit)",
               example: 24,
+            },
+            durationUnit: {
+              type: "string",
+              enum: ["DAYS", "WEEKS", "MONTHS", "YEARS"],
+              description: "Unit for the duration field",
+              example: "MONTHS",
+            },
+            totalInterest: {
+              type: "number",
+              format: "decimal",
+              description:
+                "Total interest amount calculated based on amount, rate, and duration",
+              example: 12500.0,
             },
             status: {
               type: "string",
@@ -301,9 +317,17 @@ const options: Options = {
             duration: {
               type: "integer",
               minimum: 1,
-              maximum: 360,
-              description: "Loan duration in months",
+              maximum: 1000,
+              description:
+                "Loan duration value (interpreted based on durationUnit)",
               example: 24,
+            },
+            durationUnit: {
+              type: "string",
+              enum: ["DAYS", "WEEKS", "MONTHS", "YEARS"],
+              description: "Unit for the duration field",
+              example: "MONTHS",
+              default: "MONTHS",
             },
           },
         },

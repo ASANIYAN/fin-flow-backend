@@ -62,6 +62,16 @@ export const LoanStatus: {
 export type LoanStatus = (typeof LoanStatus)[keyof typeof LoanStatus]
 
 
+export const DurationUnit: {
+  DAYS: 'DAYS',
+  WEEKS: 'WEEKS',
+  MONTHS: 'MONTHS',
+  YEARS: 'YEARS'
+};
+
+export type DurationUnit = (typeof DurationUnit)[keyof typeof DurationUnit]
+
+
 export const TransactionType: {
   DEPOSIT: 'DEPOSIT',
   WITHDRAWAL: 'WITHDRAWAL',
@@ -90,6 +100,10 @@ export const Role: typeof $Enums.Role
 export type LoanStatus = $Enums.LoanStatus
 
 export const LoanStatus: typeof $Enums.LoanStatus
+
+export type DurationUnit = $Enums.DurationUnit
+
+export const DurationUnit: typeof $Enums.DurationUnit
 
 export type TransactionType = $Enums.TransactionType
 
@@ -2738,6 +2752,7 @@ export namespace Prisma {
     amountFunded: Decimal | null
     interestRate: Decimal | null
     duration: number | null
+    totalInterest: Decimal | null
   }
 
   export type LoanSumAggregateOutputType = {
@@ -2745,6 +2760,7 @@ export namespace Prisma {
     amountFunded: Decimal | null
     interestRate: Decimal | null
     duration: number | null
+    totalInterest: Decimal | null
   }
 
   export type LoanMinAggregateOutputType = {
@@ -2755,6 +2771,8 @@ export namespace Prisma {
     amountFunded: Decimal | null
     interestRate: Decimal | null
     duration: number | null
+    durationUnit: $Enums.DurationUnit | null
+    totalInterest: Decimal | null
     status: $Enums.LoanStatus | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -2769,6 +2787,8 @@ export namespace Prisma {
     amountFunded: Decimal | null
     interestRate: Decimal | null
     duration: number | null
+    durationUnit: $Enums.DurationUnit | null
+    totalInterest: Decimal | null
     status: $Enums.LoanStatus | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -2783,6 +2803,8 @@ export namespace Prisma {
     amountFunded: number
     interestRate: number
     duration: number
+    durationUnit: number
+    totalInterest: number
     status: number
     createdAt: number
     updatedAt: number
@@ -2796,6 +2818,7 @@ export namespace Prisma {
     amountFunded?: true
     interestRate?: true
     duration?: true
+    totalInterest?: true
   }
 
   export type LoanSumAggregateInputType = {
@@ -2803,6 +2826,7 @@ export namespace Prisma {
     amountFunded?: true
     interestRate?: true
     duration?: true
+    totalInterest?: true
   }
 
   export type LoanMinAggregateInputType = {
@@ -2813,6 +2837,8 @@ export namespace Prisma {
     amountFunded?: true
     interestRate?: true
     duration?: true
+    durationUnit?: true
+    totalInterest?: true
     status?: true
     createdAt?: true
     updatedAt?: true
@@ -2827,6 +2853,8 @@ export namespace Prisma {
     amountFunded?: true
     interestRate?: true
     duration?: true
+    durationUnit?: true
+    totalInterest?: true
     status?: true
     createdAt?: true
     updatedAt?: true
@@ -2841,6 +2869,8 @@ export namespace Prisma {
     amountFunded?: true
     interestRate?: true
     duration?: true
+    durationUnit?: true
+    totalInterest?: true
     status?: true
     createdAt?: true
     updatedAt?: true
@@ -2942,6 +2972,8 @@ export namespace Prisma {
     amountFunded: Decimal
     interestRate: Decimal
     duration: number
+    durationUnit: $Enums.DurationUnit
+    totalInterest: Decimal
     status: $Enums.LoanStatus
     createdAt: Date
     updatedAt: Date
@@ -2975,6 +3007,8 @@ export namespace Prisma {
     amountFunded?: boolean
     interestRate?: boolean
     duration?: boolean
+    durationUnit?: boolean
+    totalInterest?: boolean
     status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -2993,6 +3027,8 @@ export namespace Prisma {
     amountFunded?: boolean
     interestRate?: boolean
     duration?: boolean
+    durationUnit?: boolean
+    totalInterest?: boolean
     status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -3008,6 +3044,8 @@ export namespace Prisma {
     amountFunded?: boolean
     interestRate?: boolean
     duration?: boolean
+    durationUnit?: boolean
+    totalInterest?: boolean
     status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -3023,13 +3061,15 @@ export namespace Prisma {
     amountFunded?: boolean
     interestRate?: boolean
     duration?: boolean
+    durationUnit?: boolean
+    totalInterest?: boolean
     status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     borrowerId?: boolean
   }
 
-  export type LoanOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "title" | "description" | "amountRequested" | "amountFunded" | "interestRate" | "duration" | "status" | "createdAt" | "updatedAt" | "borrowerId", ExtArgs["result"]["loan"]>
+  export type LoanOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "title" | "description" | "amountRequested" | "amountFunded" | "interestRate" | "duration" | "durationUnit" | "totalInterest" | "status" | "createdAt" | "updatedAt" | "borrowerId", ExtArgs["result"]["loan"]>
   export type LoanInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     borrower?: boolean | UserDefaultArgs<ExtArgs>
     fundedBy?: boolean | Loan$fundedByArgs<ExtArgs>
@@ -3058,6 +3098,8 @@ export namespace Prisma {
       amountFunded: Prisma.Decimal
       interestRate: Prisma.Decimal
       duration: number
+      durationUnit: $Enums.DurationUnit
+      totalInterest: Prisma.Decimal
       status: $Enums.LoanStatus
       createdAt: Date
       updatedAt: Date
@@ -3495,6 +3537,8 @@ export namespace Prisma {
     readonly amountFunded: FieldRef<"Loan", 'Decimal'>
     readonly interestRate: FieldRef<"Loan", 'Decimal'>
     readonly duration: FieldRef<"Loan", 'Int'>
+    readonly durationUnit: FieldRef<"Loan", 'DurationUnit'>
+    readonly totalInterest: FieldRef<"Loan", 'Decimal'>
     readonly status: FieldRef<"Loan", 'LoanStatus'>
     readonly createdAt: FieldRef<"Loan", 'DateTime'>
     readonly updatedAt: FieldRef<"Loan", 'DateTime'>
@@ -7340,6 +7384,8 @@ export namespace Prisma {
     amountFunded: 'amountFunded',
     interestRate: 'interestRate',
     duration: 'duration',
+    durationUnit: 'durationUnit',
+    totalInterest: 'totalInterest',
     status: 'status',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
@@ -7476,6 +7522,13 @@ export namespace Prisma {
    * Reference to a field of type 'Int'
    */
   export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+    
+
+
+  /**
+   * Reference to a field of type 'DurationUnit'
+   */
+  export type EnumDurationUnitFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DurationUnit'>
     
 
 
@@ -7649,6 +7702,8 @@ export namespace Prisma {
     amountFunded?: DecimalFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     interestRate?: DecimalFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     duration?: IntFilter<"Loan"> | number
+    durationUnit?: EnumDurationUnitFilter<"Loan"> | $Enums.DurationUnit
+    totalInterest?: DecimalFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     status?: EnumLoanStatusFilter<"Loan"> | $Enums.LoanStatus
     createdAt?: DateTimeFilter<"Loan"> | Date | string
     updatedAt?: DateTimeFilter<"Loan"> | Date | string
@@ -7666,6 +7721,8 @@ export namespace Prisma {
     amountFunded?: SortOrder
     interestRate?: SortOrder
     duration?: SortOrder
+    durationUnit?: SortOrder
+    totalInterest?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -7686,6 +7743,8 @@ export namespace Prisma {
     amountFunded?: DecimalFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     interestRate?: DecimalFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     duration?: IntFilter<"Loan"> | number
+    durationUnit?: EnumDurationUnitFilter<"Loan"> | $Enums.DurationUnit
+    totalInterest?: DecimalFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     status?: EnumLoanStatusFilter<"Loan"> | $Enums.LoanStatus
     createdAt?: DateTimeFilter<"Loan"> | Date | string
     updatedAt?: DateTimeFilter<"Loan"> | Date | string
@@ -7703,6 +7762,8 @@ export namespace Prisma {
     amountFunded?: SortOrder
     interestRate?: SortOrder
     duration?: SortOrder
+    durationUnit?: SortOrder
+    totalInterest?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -7725,6 +7786,8 @@ export namespace Prisma {
     amountFunded?: DecimalWithAggregatesFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     interestRate?: DecimalWithAggregatesFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     duration?: IntWithAggregatesFilter<"Loan"> | number
+    durationUnit?: EnumDurationUnitWithAggregatesFilter<"Loan"> | $Enums.DurationUnit
+    totalInterest?: DecimalWithAggregatesFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     status?: EnumLoanStatusWithAggregatesFilter<"Loan"> | $Enums.LoanStatus
     createdAt?: DateTimeWithAggregatesFilter<"Loan"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Loan"> | Date | string
@@ -8093,6 +8156,8 @@ export namespace Prisma {
     amountFunded?: Decimal | DecimalJsLike | number | string
     interestRate: Decimal | DecimalJsLike | number | string
     duration: number
+    durationUnit?: $Enums.DurationUnit
+    totalInterest: Decimal | DecimalJsLike | number | string
     status?: $Enums.LoanStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -8109,6 +8174,8 @@ export namespace Prisma {
     amountFunded?: Decimal | DecimalJsLike | number | string
     interestRate: Decimal | DecimalJsLike | number | string
     duration: number
+    durationUnit?: $Enums.DurationUnit
+    totalInterest: Decimal | DecimalJsLike | number | string
     status?: $Enums.LoanStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -8125,6 +8192,8 @@ export namespace Prisma {
     amountFunded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     duration?: IntFieldUpdateOperationsInput | number
+    durationUnit?: EnumDurationUnitFieldUpdateOperationsInput | $Enums.DurationUnit
+    totalInterest?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -8141,6 +8210,8 @@ export namespace Prisma {
     amountFunded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     duration?: IntFieldUpdateOperationsInput | number
+    durationUnit?: EnumDurationUnitFieldUpdateOperationsInput | $Enums.DurationUnit
+    totalInterest?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -8157,6 +8228,8 @@ export namespace Prisma {
     amountFunded?: Decimal | DecimalJsLike | number | string
     interestRate: Decimal | DecimalJsLike | number | string
     duration: number
+    durationUnit?: $Enums.DurationUnit
+    totalInterest: Decimal | DecimalJsLike | number | string
     status?: $Enums.LoanStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -8171,6 +8244,8 @@ export namespace Prisma {
     amountFunded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     duration?: IntFieldUpdateOperationsInput | number
+    durationUnit?: EnumDurationUnitFieldUpdateOperationsInput | $Enums.DurationUnit
+    totalInterest?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -8184,6 +8259,8 @@ export namespace Prisma {
     amountFunded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     duration?: IntFieldUpdateOperationsInput | number
+    durationUnit?: EnumDurationUnitFieldUpdateOperationsInput | $Enums.DurationUnit
+    totalInterest?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -8701,6 +8778,13 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
+  export type EnumDurationUnitFilter<$PrismaModel = never> = {
+    equals?: $Enums.DurationUnit | EnumDurationUnitFieldRefInput<$PrismaModel>
+    in?: $Enums.DurationUnit[]
+    notIn?: $Enums.DurationUnit[]
+    not?: NestedEnumDurationUnitFilter<$PrismaModel> | $Enums.DurationUnit
+  }
+
   export type EnumLoanStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.LoanStatus | EnumLoanStatusFieldRefInput<$PrismaModel>
     in?: $Enums.LoanStatus[]
@@ -8731,6 +8815,8 @@ export namespace Prisma {
     amountFunded?: SortOrder
     interestRate?: SortOrder
     duration?: SortOrder
+    durationUnit?: SortOrder
+    totalInterest?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -8742,6 +8828,7 @@ export namespace Prisma {
     amountFunded?: SortOrder
     interestRate?: SortOrder
     duration?: SortOrder
+    totalInterest?: SortOrder
   }
 
   export type LoanMaxOrderByAggregateInput = {
@@ -8752,6 +8839,8 @@ export namespace Prisma {
     amountFunded?: SortOrder
     interestRate?: SortOrder
     duration?: SortOrder
+    durationUnit?: SortOrder
+    totalInterest?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -8766,6 +8855,8 @@ export namespace Prisma {
     amountFunded?: SortOrder
     interestRate?: SortOrder
     duration?: SortOrder
+    durationUnit?: SortOrder
+    totalInterest?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -8777,6 +8868,7 @@ export namespace Prisma {
     amountFunded?: SortOrder
     interestRate?: SortOrder
     duration?: SortOrder
+    totalInterest?: SortOrder
   }
 
   export type IntWithAggregatesFilter<$PrismaModel = never> = {
@@ -8793,6 +8885,16 @@ export namespace Prisma {
     _sum?: NestedIntFilter<$PrismaModel>
     _min?: NestedIntFilter<$PrismaModel>
     _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type EnumDurationUnitWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DurationUnit | EnumDurationUnitFieldRefInput<$PrismaModel>
+    in?: $Enums.DurationUnit[]
+    notIn?: $Enums.DurationUnit[]
+    not?: NestedEnumDurationUnitWithAggregatesFilter<$PrismaModel> | $Enums.DurationUnit
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumDurationUnitFilter<$PrismaModel>
+    _max?: NestedEnumDurationUnitFilter<$PrismaModel>
   }
 
   export type EnumLoanStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -9266,6 +9368,10 @@ export namespace Prisma {
     divide?: number
   }
 
+  export type EnumDurationUnitFieldUpdateOperationsInput = {
+    set?: $Enums.DurationUnit
+  }
+
   export type EnumLoanStatusFieldUpdateOperationsInput = {
     set?: $Enums.LoanStatus
   }
@@ -9589,6 +9695,13 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
+  export type NestedEnumDurationUnitFilter<$PrismaModel = never> = {
+    equals?: $Enums.DurationUnit | EnumDurationUnitFieldRefInput<$PrismaModel>
+    in?: $Enums.DurationUnit[]
+    notIn?: $Enums.DurationUnit[]
+    not?: NestedEnumDurationUnitFilter<$PrismaModel> | $Enums.DurationUnit
+  }
+
   export type NestedEnumLoanStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.LoanStatus | EnumLoanStatusFieldRefInput<$PrismaModel>
     in?: $Enums.LoanStatus[]
@@ -9621,6 +9734,16 @@ export namespace Prisma {
     gt?: number | FloatFieldRefInput<$PrismaModel>
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
+  export type NestedEnumDurationUnitWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DurationUnit | EnumDurationUnitFieldRefInput<$PrismaModel>
+    in?: $Enums.DurationUnit[]
+    notIn?: $Enums.DurationUnit[]
+    not?: NestedEnumDurationUnitWithAggregatesFilter<$PrismaModel> | $Enums.DurationUnit
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumDurationUnitFilter<$PrismaModel>
+    _max?: NestedEnumDurationUnitFilter<$PrismaModel>
   }
 
   export type NestedEnumLoanStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -9693,6 +9816,8 @@ export namespace Prisma {
     amountFunded?: Decimal | DecimalJsLike | number | string
     interestRate: Decimal | DecimalJsLike | number | string
     duration: number
+    durationUnit?: $Enums.DurationUnit
+    totalInterest: Decimal | DecimalJsLike | number | string
     status?: $Enums.LoanStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -9708,6 +9833,8 @@ export namespace Prisma {
     amountFunded?: Decimal | DecimalJsLike | number | string
     interestRate: Decimal | DecimalJsLike | number | string
     duration: number
+    durationUnit?: $Enums.DurationUnit
+    totalInterest: Decimal | DecimalJsLike | number | string
     status?: $Enums.LoanStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -9728,6 +9855,8 @@ export namespace Prisma {
     amountFunded?: Decimal | DecimalJsLike | number | string
     interestRate: Decimal | DecimalJsLike | number | string
     duration: number
+    durationUnit?: $Enums.DurationUnit
+    totalInterest: Decimal | DecimalJsLike | number | string
     status?: $Enums.LoanStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -9743,6 +9872,8 @@ export namespace Prisma {
     amountFunded?: Decimal | DecimalJsLike | number | string
     interestRate: Decimal | DecimalJsLike | number | string
     duration: number
+    durationUnit?: $Enums.DurationUnit
+    totalInterest: Decimal | DecimalJsLike | number | string
     status?: $Enums.LoanStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -9873,6 +10004,8 @@ export namespace Prisma {
     amountFunded?: DecimalFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     interestRate?: DecimalFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     duration?: IntFilter<"Loan"> | number
+    durationUnit?: EnumDurationUnitFilter<"Loan"> | $Enums.DurationUnit
+    totalInterest?: DecimalFilter<"Loan"> | Decimal | DecimalJsLike | number | string
     status?: EnumLoanStatusFilter<"Loan"> | $Enums.LoanStatus
     createdAt?: DateTimeFilter<"Loan"> | Date | string
     updatedAt?: DateTimeFilter<"Loan"> | Date | string
@@ -10476,6 +10609,8 @@ export namespace Prisma {
     amountFunded?: Decimal | DecimalJsLike | number | string
     interestRate: Decimal | DecimalJsLike | number | string
     duration: number
+    durationUnit?: $Enums.DurationUnit
+    totalInterest: Decimal | DecimalJsLike | number | string
     status?: $Enums.LoanStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -10491,6 +10626,8 @@ export namespace Prisma {
     amountFunded?: Decimal | DecimalJsLike | number | string
     interestRate: Decimal | DecimalJsLike | number | string
     duration: number
+    durationUnit?: $Enums.DurationUnit
+    totalInterest: Decimal | DecimalJsLike | number | string
     status?: $Enums.LoanStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -10575,6 +10712,8 @@ export namespace Prisma {
     amountFunded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     duration?: IntFieldUpdateOperationsInput | number
+    durationUnit?: EnumDurationUnitFieldUpdateOperationsInput | $Enums.DurationUnit
+    totalInterest?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -10590,6 +10729,8 @@ export namespace Prisma {
     amountFunded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     duration?: IntFieldUpdateOperationsInput | number
+    durationUnit?: EnumDurationUnitFieldUpdateOperationsInput | $Enums.DurationUnit
+    totalInterest?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -10605,6 +10746,8 @@ export namespace Prisma {
     amountFunded?: Decimal | DecimalJsLike | number | string
     interestRate: Decimal | DecimalJsLike | number | string
     duration: number
+    durationUnit?: $Enums.DurationUnit
+    totalInterest: Decimal | DecimalJsLike | number | string
     status?: $Enums.LoanStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -10648,6 +10791,8 @@ export namespace Prisma {
     amountFunded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     duration?: IntFieldUpdateOperationsInput | number
+    durationUnit?: EnumDurationUnitFieldUpdateOperationsInput | $Enums.DurationUnit
+    totalInterest?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -10663,6 +10808,8 @@ export namespace Prisma {
     amountFunded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     duration?: IntFieldUpdateOperationsInput | number
+    durationUnit?: EnumDurationUnitFieldUpdateOperationsInput | $Enums.DurationUnit
+    totalInterest?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -10678,6 +10825,8 @@ export namespace Prisma {
     amountFunded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     duration?: IntFieldUpdateOperationsInput | number
+    durationUnit?: EnumDurationUnitFieldUpdateOperationsInput | $Enums.DurationUnit
+    totalInterest?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -10692,6 +10841,8 @@ export namespace Prisma {
     amountFunded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     duration?: IntFieldUpdateOperationsInput | number
+    durationUnit?: EnumDurationUnitFieldUpdateOperationsInput | $Enums.DurationUnit
+    totalInterest?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -10707,6 +10858,8 @@ export namespace Prisma {
     amountFunded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     duration?: IntFieldUpdateOperationsInput | number
+    durationUnit?: EnumDurationUnitFieldUpdateOperationsInput | $Enums.DurationUnit
+    totalInterest?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -10722,6 +10875,8 @@ export namespace Prisma {
     amountFunded?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     interestRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     duration?: IntFieldUpdateOperationsInput | number
+    durationUnit?: EnumDurationUnitFieldUpdateOperationsInput | $Enums.DurationUnit
+    totalInterest?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumLoanStatusFieldUpdateOperationsInput | $Enums.LoanStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string

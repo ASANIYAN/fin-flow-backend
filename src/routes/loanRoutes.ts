@@ -191,6 +191,8 @@ const router = Router();
  *                         amountFunded: 35000
  *                         interestRate: 12.5
  *                         duration: 24
+ *                         durationUnit: "MONTHS"
+ *                         totalInterest: 12500.0
  *                         status: "FUNDING"
  *                         createdAt: "2024-09-15T10:30:00.000Z"
  *                         updatedAt: "2024-09-20T14:15:00.000Z"
@@ -201,6 +203,8 @@ const router = Router();
  *                         amountFunded: 75000
  *                         interestRate: 10.0
  *                         duration: 36
+ *                         durationUnit: "MONTHS"
+ *                         totalInterest: 22500.0
  *                         status: "FUNDED"
  *                         createdAt: "2024-08-20T09:15:00.000Z"
  *                         updatedAt: "2024-09-10T16:45:00.000Z"
@@ -223,6 +227,8 @@ const router = Router();
  *                         amountFunded: 0
  *                         interestRate: 15.0
  *                         duration: 18
+ *                         durationUnit: "MONTHS"
+ *                         totalInterest: 16875.0
  *                         status: "PENDING"
  *                         borrower: "John Smith"
  *                         progress: 0
@@ -234,6 +240,8 @@ const router = Router();
  *                         amountFunded: 15000
  *                         interestRate: 18.5
  *                         duration: 12
+ *                         durationUnit: "WEEKS"
+ *                         totalInterest: 1067.31
  *                         status: "FUNDING"
  *                         borrower: "Maria Garcia"
  *                         progress: 60
@@ -245,6 +253,8 @@ const router = Router();
  *                         amountFunded: 0
  *                         interestRate: 12.0
  *                         duration: 48
+ *                         durationUnit: "MONTHS"
+ *                         totalInterest: 57600.0
  *                         status: "PENDING"
  *                         borrower: "Dr. James Wilson"
  *                         progress: 0

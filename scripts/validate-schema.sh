@@ -8,7 +8,7 @@ echo "======================================="
 
 # Run only schema validation tests
 echo "📋 Running schema validation test suite..."
-npm test -- --testPathPattern=schema-validation.test.ts
+npm test -- --testPathPatterns=schema-validation.test.ts
 
 if [ $? -eq 0 ]; then
     echo "✅ Schema validation tests passed!"

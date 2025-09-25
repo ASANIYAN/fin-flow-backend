@@ -44,12 +44,28 @@ export const getDashboardData = async (req: Request, res: Response) => {
 
 export const createLoan = async (req: Request, res: Response) => {
   const user = (req as AuthenticatedRequest).user;
-  const { title, description, amountRequested, interestRate, duration } =
-    req.body;
+  const {
+    title,
+    description,
+    amountRequested,
+    interestRate,
+    duration,
+    durationUnit,
+  } = req.body;
 
   // Basic validation to ensure required fields are present
   if (!title || !amountRequested || !interestRate || !duration) {
     return errorResponse(res, 400, "Missing required loan fields.");
+  }
+
+  // Validate durationUnit if provided (defaults to MONTHS in schema if not provided)
+  const validDurationUnits = ["DAYS", "WEEKS", "MONTHS", "YEARS"];
+  if (durationUnit && !validDurationUnits.includes(durationUnit)) {
+    return errorResponse(
+      res,
+      400,
+      "Invalid duration unit. Must be one of: DAYS, WEEKS, MONTHS, YEARS"
+    );
   }
 
   try {
@@ -59,6 +75,7 @@ export const createLoan = async (req: Request, res: Response) => {
       amountRequested,
       interestRate,
       duration,
+      durationUnit: durationUnit || "MONTHS", // Default to MONTHS if not provided
       borrowerId: user.id, // Attach the authenticated user's ID
     };
 

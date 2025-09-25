@@ -71,6 +71,8 @@ describe("Loan Endpoints", () => {
         amountRequested: 10000,
         interestRate: 10,
         duration: 12,
+        durationUnit: "MONTHS",
+        totalInterest: 1000,
         borrowerId: borrowerId,
         status: "PENDING",
       },
@@ -129,6 +131,7 @@ describe("Loan Endpoints", () => {
         amountRequested: 15000,
         interestRate: 8,
         duration: 18,
+        durationUnit: "MONTHS",
       };
 
       const res = await request(app)
@@ -148,6 +151,7 @@ describe("Loan Endpoints", () => {
         amountRequested: 15000,
         interestRate: 8,
         duration: 18,
+        durationUnit: "MONTHS",
       };
 
       const res = await request(app)
@@ -181,6 +185,7 @@ describe("Loan Endpoints", () => {
         amountRequested: 15000,
         interestRate: 8,
         duration: 18,
+        durationUnit: "MONTHS",
       };
 
       const res = await request(app)
@@ -270,6 +275,8 @@ describe("Loan Endpoints", () => {
             amountRequested: 10000,
             interestRate: 10,
             duration: 12,
+            durationUnit: "MONTHS",
+            totalInterest: 1000,
             borrowerId: borrowerId,
             status: "PENDING",
           },
@@ -279,6 +286,8 @@ describe("Loan Endpoints", () => {
             amountRequested: 20000,
             interestRate: 12,
             duration: 24,
+            durationUnit: "MONTHS",
+            totalInterest: 4800,
             borrowerId: borrowerId,
             status: "PENDING",
           },

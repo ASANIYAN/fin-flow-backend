@@ -50,16 +50,18 @@ enum Role {
 }
 
 model Loan {
-  id              String     @id @default(uuid())
+  id              String       @id @default(uuid())
   title           String
   description     String?
   amountRequested Decimal
-  amountFunded    Decimal    @default(0)
+  amountFunded    Decimal      @default(0)
   interestRate    Decimal
-  duration        Int // in months
-  status          LoanStatus @default(PENDING)
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  duration        Int // Duration value
+  durationUnit    DurationUnit @default(MONTHS) // Duration unit (DAYS, WEEKS, MONTHS, YEARS)
+  totalInterest   Decimal
+  status          LoanStatus   @default(PENDING)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   // Link to the user who created the loan (the Borrower)
   borrower   User   @relation(fields: [borrowerId], references: [id])
@@ -78,6 +80,13 @@ enum LoanStatus {
   FUNDED
   COMPLETED
   CANCELLED
+}
+
+enum DurationUnit {
+  DAYS
+  WEEKS
+  MONTHS
+  YEARS
 }
 
 model EmailVerificationToken {

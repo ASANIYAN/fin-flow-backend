@@ -57,7 +57,9 @@ model Loan {
   amountRequested Decimal
   amountFunded    Decimal  @default(0)
   interestRate    Decimal
-  duration        Int // in months
+  duration        Int // Duration value
+  durationUnit    DurationUnit @default(MONTHS) // Duration unit (DAYS, WEEKS, MONTHS, YEARS)
+  totalInterest   Decimal
   status          LoanStatus @default(PENDING)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -79,6 +81,13 @@ enum LoanStatus {
   FUNDED
   COMPLETED
   CANCELLED
+}
+
+enum DurationUnit {
+  DAYS
+  WEEKS
+  MONTHS
+  YEARS
 }
 
 model EmailVerificationToken {

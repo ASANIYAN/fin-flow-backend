@@ -142,6 +142,8 @@ exports.Prisma.LoanScalarFieldEnum = {
   amountFunded: 'amountFunded',
   interestRate: 'interestRate',
   duration: 'duration',
+  durationUnit: 'durationUnit',
+  totalInterest: 'totalInterest',
   status: 'status',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
@@ -209,6 +211,13 @@ exports.Prisma.QueryMode = {
 exports.Role = exports.$Enums.Role = {
   BORROWER: 'BORROWER',
   LENDER: 'LENDER'
+};
+
+exports.DurationUnit = exports.$Enums.DurationUnit = {
+  DAYS: 'DAYS',
+  WEEKS: 'WEEKS',
+  MONTHS: 'MONTHS',
+  YEARS: 'YEARS'
 };
 
 exports.LoanStatus = exports.$Enums.LoanStatus = {

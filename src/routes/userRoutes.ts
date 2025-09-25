@@ -81,9 +81,9 @@ router.get(
 /**
  * @swagger
  * /api/user/profile:
- *   put:
+ *   patch:
  *     summary: Update user profile
- *     description: Update the authenticated user's profile information (firstName and lastName only)
+ *     description: Partially update the authenticated user's profile information (firstName and/or lastName)
  *     tags: [User]
  *     security:
  *       - BearerAuth: []
@@ -99,14 +99,15 @@ router.get(
  *                 minLength: 2
  *                 maxLength: 50
  *                 example: "John"
+ *                 description: "User's first name"
  *               lastName:
  *                 type: string
  *                 minLength: 2
  *                 maxLength: 50
  *                 example: "Doe"
- *             required:
- *               - firstName
- *               - lastName
+ *                 description: "User's last name"
+ *             minProperties: 1
+ *             description: "At least one field must be provided for update"
  *     responses:
  *       200:
  *         description: User profile updated successfully
@@ -124,7 +125,7 @@ router.get(
  *                 data:
  *                   $ref: '#/components/schemas/UserProfile'
  *       400:
- *         description: Invalid input data
+ *         description: Invalid input data or no valid fields provided
  *         content:
  *           application/json:
  *             schema:
@@ -137,7 +138,7 @@ router.get(
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.put(
+router.patch(
   "/profile",
   authenticateToken,
   requireEmailVerification,

@@ -180,7 +180,7 @@ describe("User Endpoints", () => {
     });
   });
 
-  describe("PUT /api/user/profile", () => {
+  describe("PATCH /api/user/profile", () => {
     const validUpdateData = {
       firstName: "UpdatedFirst",
       lastName: "UpdatedLast",
@@ -188,7 +188,7 @@ describe("User Endpoints", () => {
 
     it("should update user profile successfully", async () => {
       const res = await request(app)
-        .put("/api/user/profile")
+        .patch("/api/user/profile")
         .set("Authorization", `Bearer ${userToken}`)
         .send(validUpdateData);
 
@@ -217,7 +217,7 @@ describe("User Endpoints", () => {
       };
 
       const res = await request(app)
-        .put("/api/user/profile")
+        .patch("/api/user/profile")
         .set("Authorization", `Bearer ${userToken}`)
         .send(partialUpdate);
 
@@ -232,7 +232,7 @@ describe("User Endpoints", () => {
       };
 
       const res = await request(app)
-        .put("/api/user/profile")
+        .patch("/api/user/profile")
         .set("Authorization", `Bearer ${userToken}`)
         .send(partialUpdate);
 
@@ -249,7 +249,7 @@ describe("User Endpoints", () => {
       };
 
       const res = await request(app)
-        .put("/api/user/profile")
+        .patch("/api/user/profile")
         .set("Authorization", `Bearer ${userToken}`)
         .send(invalidUpdate);
 
@@ -260,7 +260,7 @@ describe("User Endpoints", () => {
 
     it("should reject empty update", async () => {
       const res = await request(app)
-        .put("/api/user/profile")
+        .patch("/api/user/profile")
         .set("Authorization", `Bearer ${userToken}`)
         .send({});
 
@@ -271,7 +271,7 @@ describe("User Endpoints", () => {
 
     it("should require authentication", async () => {
       const res = await request(app)
-        .put("/api/user/profile")
+        .patch("/api/user/profile")
         .send(validUpdateData);
 
       expect(res.statusCode).toEqual(401);
@@ -280,7 +280,7 @@ describe("User Endpoints", () => {
 
     it("should require email verification", async () => {
       const res = await request(app)
-        .put("/api/user/profile")
+        .patch("/api/user/profile")
         .set("Authorization", `Bearer ${unverifiedUserToken}`)
         .send(validUpdateData);
 
