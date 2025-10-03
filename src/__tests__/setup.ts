@@ -1,5 +1,3 @@
-// src/__tests__/setup.ts
-
 import { execSync } from "child_process";
 import path from "path";
 import * as fs from "fs";

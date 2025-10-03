@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateUserProfileService = exports.getUserProfileService = exports.resetUserPassword = exports.generatePasswordResetToken = exports.comparePasswords = exports.findUserById = exports.findUserByEmail = exports.verifyUser = exports.findUserByVerificationToken = exports.createUser = exports.prisma = void 0;
+exports.getUserTransactionsService = exports.updateUserProfileService = exports.getUserProfileService = exports.resetUserPassword = exports.generatePasswordResetToken = exports.comparePasswords = exports.findUserById = exports.findUserByEmail = exports.verifyUser = exports.findUserByVerificationToken = exports.createUser = exports.prisma = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const crypto_1 = __importDefault(require("crypto"));
 const prisma_1 = require("../lib/prisma");
@@ -67,6 +67,20 @@ const findUserById = (id) => __awaiter(void 0, void 0, void 0, function* () {
     return prisma.user.findUnique({
         where: {
             id,
+        },
+        select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            password: true,
+            isEmailVerified: true,
+            emailVerifiedAt: true,
+            verificationToken: true,
+            availableBalance: true,
+            escrowBalance: true,
+            createdAt: true,
+            updatedAt: true,
         },
     });
 });
@@ -129,10 +143,12 @@ const getUserProfileService = (userId) => __awaiter(void 0, void 0, void 0, func
             lastName: true,
             role: true,
             isEmailVerified: true,
+            availableBalance: true,
+            escrowBalance: true,
             createdAt: true,
         },
     });
-    return user;
+    return Object.assign(Object.assign({}, user), { availableBalance: parseFloat(user.availableBalance.toString()), escrowBalance: parseFloat(user.escrowBalance.toString()) });
 });
 exports.getUserProfileService = getUserProfileService;
 const updateUserProfileService = (userId, updateData) => __awaiter(void 0, void 0, void 0, function* () {
@@ -166,3 +182,54 @@ const updateUserProfileService = (userId, updateData) => __awaiter(void 0, void 
     return updatedUser;
 });
 exports.updateUserProfileService = updateUserProfileService;
+const getUserTransactionsService = (userId_1, ...args_1) => __awaiter(void 0, [userId_1, ...args_1], void 0, function* (userId, page = 1, pageSize = 10, q) {
+    // Calculate skip for pagination
+    const skip = (page - 1) * pageSize;
+    // Build the dynamic 'where' clause for filtering and searching
+    const where = {
+        userId: userId,
+    };
+    if (q) {
+        const searchTermUpper = q.toUpperCase();
+        const orConditions = [{ description: { contains: q } }];
+        // Only add type/status filters if the search term matches valid enum values
+        const validTypes = [
+            "DEPOSIT",
+            "WITHDRAWAL",
+            "LOAN_FUNDING",
+            "LOAN_REPAYMENT",
+        ];
+        const validStatuses = ["PENDING", "REPAID", "FAILED"];
+        if (validTypes.includes(searchTermUpper)) {
+            orConditions.push({ type: { equals: searchTermUpper } });
+        }
+        if (validStatuses.includes(searchTermUpper)) {
+            orConditions.push({ status: { equals: searchTermUpper } });
+        }
+        // Add loan title search if available
+        orConditions.push({ loan: { title: { contains: q } } });
+        where.OR = orConditions;
+    }
+    // Fetch the paginated and filtered transactions
+    const transactions = yield prisma.transaction.findMany({
+        where,
+        skip,
+        take: pageSize,
+        // We can also include related data for better context in the response
+        include: {
+            loan: {
+                select: {
+                    title: true, // Only include the loan title for context
+                },
+            },
+        },
+        orderBy: {
+            createdAt: "desc", // Sort by most recent transactions first
+        },
+    });
+    // Get the total count of transactions for pagination (without skip/take)
+    const totalCount = yield prisma.transaction.count({ where });
+    const totalPages = Math.ceil(totalCount / pageSize);
+    return { transactions, totalCount, totalPages };
+});
+exports.getUserTransactionsService = getUserTransactionsService;

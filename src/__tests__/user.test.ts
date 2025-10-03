@@ -4,6 +4,7 @@ process.env.TEST_DATABASE_URL = "file:./test.db";
 import app from "../server";
 import request from "supertest";
 import { prisma } from "../services/userService";
+import { TransactionType } from "../lib/prisma";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "test-secret";
@@ -17,8 +18,6 @@ describe("User Endpoints", () => {
   beforeEach(async () => {
     // Clean up test data before each test (order matters for foreign keys)
     await prisma.transaction.deleteMany({});
-    await prisma.emailVerificationToken.deleteMany({});
-    await prisma.passwordResetToken.deleteMany({});
     await prisma.loan.deleteMany({});
     await prisma.user.deleteMany({});
 
@@ -32,11 +31,13 @@ describe("User Endpoints", () => {
         lastName: "User",
         role: "BORROWER",
         isEmailVerified: true,
-        balance: 25000,
+        emailVerifiedAt: new Date(),
+        availableBalance: 25000,
+        escrowBalance: 0,
       },
     });
 
-    // Create unverified test user
+    userId = verifiedUser.id;
     const unverifiedUser = await prisma.user.create({
       data: {
         id: "test-user-unverified",
@@ -45,8 +46,8 @@ describe("User Endpoints", () => {
         firstName: "Unverified",
         lastName: "User",
         role: "LENDER",
-        isEmailVerified: false,
-        balance: 0,
+        availableBalance: 0,
+        escrowBalance: 0,
       },
     });
 
@@ -69,22 +70,19 @@ describe("User Endpoints", () => {
         {
           userId: userId,
           amount: 10000,
-          type: "DEPOSIT",
-          status: "COMPLETED",
+          type: TransactionType.DEPOSIT,
           description: "Deposit via Paystack, Ref: ref_123456",
         },
         {
           userId: userId,
           amount: 5000,
-          type: "WITHDRAWAL",
-          status: "COMPLETED",
+          type: TransactionType.WITHDRAWAL,
           description: "Withdrawal, Ref: TRF_123456",
         },
         {
           userId: userId,
           amount: 15000,
-          type: "LOAN_FUNDING",
-          status: "COMPLETED",
+          type: TransactionType.FUNDING_COMMIT,
           description: "Loan funding transaction",
         },
       ],
@@ -394,7 +392,8 @@ describe("User Endpoints", () => {
           lastName: "User",
           role: "LENDER",
           isEmailVerified: true,
-          balance: 0,
+          availableBalance: 0,
+          escrowBalance: 0,
         },
       });
 
@@ -402,8 +401,7 @@ describe("User Endpoints", () => {
         data: {
           userId: otherUser.id,
           amount: 1000,
-          type: "DEPOSIT",
-          status: "COMPLETED",
+          type: TransactionType.DEPOSIT,
           description: "Other user transaction",
         },
       });

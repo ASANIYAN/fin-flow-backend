@@ -24,6 +24,38 @@ const router = Router();
  *                       type: array
  *                       items:
  *                         $ref: '#/components/schemas/Bank'
+ *             examples:
+ *               success:
+ *                 summary: Sample banks list
+ *                 value:
+ *                   success: true
+ *                   message: "Bank list fetched successfully."
+ *                   data:
+ *                     - name: "9mobile 9Payment Service Bank"
+ *                       code: "120001"
+ *                     - name: "Abbey Mortgage Bank"
+ *                       code: "404"
+ *                     - name: "Above Only MFB"
+ *                       code: "51204"
+ *                     - name: "Abulesoro MFB"
+ *                       code: "51312"
+ *                     - name: "Access Bank"
+ *                       code: "044"
+ *                     - name: "Access Bank (Diamond)"
+ *                       code: "063"
+ *                     - name: "Accion Microfinance Bank"
+ *                       code: "602"
+ *                     - name: "Aella MFB"
+ *                       code: "50315"
+ *                     - name: "AG Mortgage Bank"
+ *                       code: "90077"
+ *                     - name: "Ahmadu Bello University Microfinance Bank"
+ *                       code: "50036"
+ *                     - name: "Airtel Smartcash PSB"
+ *                       code: "120004"
+ *                     - name: "AKU Microfinance Bank"
+ *                       code: "51336"
+ *
  *       500:
  *         description: Internal server error
  *         content:

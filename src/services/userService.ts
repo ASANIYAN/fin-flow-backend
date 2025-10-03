@@ -65,6 +65,20 @@ export const findUserById = async (id: string) => {
     where: {
       id,
     },
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      password: true,
+      isEmailVerified: true,
+      emailVerifiedAt: true,
+      verificationToken: true,
+      availableBalance: true,
+      escrowBalance: true,
+      createdAt: true,
+      updatedAt: true,
+    },
   });
 };
 
@@ -137,11 +151,17 @@ export const getUserProfileService = async (userId: string) => {
       lastName: true,
       role: true,
       isEmailVerified: true,
+      availableBalance: true,
+      escrowBalance: true,
       createdAt: true,
     },
   });
 
-  return user;
+  return {
+    ...user,
+    availableBalance: parseFloat(user.availableBalance.toString()),
+    escrowBalance: parseFloat(user.escrowBalance.toString()),
+  };
 };
 
 export const updateUserProfileService = async (
@@ -204,7 +224,7 @@ export const getUserTransactionsService = async (
       "LOAN_FUNDING",
       "LOAN_REPAYMENT",
     ];
-    const validStatuses = ["PENDING", "COMPLETED", "FAILED"];
+    const validStatuses = ["PENDING", "REPAID", "FAILED"];
 
     if (validTypes.includes(searchTermUpper)) {
       orConditions.push({ type: { equals: searchTermUpper } });

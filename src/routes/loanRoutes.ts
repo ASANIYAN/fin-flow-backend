@@ -4,6 +4,7 @@ import {
   fundLoan,
   getDashboardData,
   getOpenLoans,
+  getMyLoans,
 } from "../controllers/loanController";
 import {
   authenticateToken,
@@ -84,7 +85,7 @@ const router = Router();
  *                                 example: 24
  *                               status:
  *                                 type: string
- *                                 enum: [PENDING, FUNDING, FUNDED, COMPLETED, CANCELLED]
+ *                                 enum: [PENDING, FUNDING, FULLY_FUNDED, ACTIVE, REPAID]
  *                                 example: "FUNDING"
  *                               createdAt:
  *                                 type: string
@@ -158,7 +159,7 @@ const router = Router();
  *                                 example: 18
  *                               status:
  *                                 type: string
- *                                 enum: [PENDING, FUNDING, FUNDED, COMPLETED, CANCELLED]
+ *                                 enum: [PENDING, FUNDING, FULLY_FUNDED, ACTIVE, REPAID]
  *                                 example: "PENDING"
  *                               borrower:
  *                                 type: string
@@ -205,7 +206,7 @@ const router = Router();
  *                         duration: 36
  *                         durationUnit: "MONTHS"
  *                         totalInterest: 22500.0
- *                         status: "FUNDED"
+ *                         status: "FULLY_FUNDED"
  *                         createdAt: "2024-08-20T09:15:00.000Z"
  *                         updatedAt: "2024-09-10T16:45:00.000Z"
  *               lender:
@@ -348,6 +349,143 @@ router.post(
 
 /**
  * @swagger
+ * /api/loans/my-loans:
+ *   get:
+ *     summary: Get all loans created by the authenticated borrower
+ *     tags: [Loans]
+ *     security:
+ *       - BearerAuth: []
+ *     description: Returns paginated list of loans created by the authenticated borrower. Supports search, amount filtering and status filtering.
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number for pagination (default 1)
+ *         example: 1
+ *       - in: query
+ *         name: pageSize
+ *         schema:
+ *           type: integer
+ *         description: Number of items per page (default 10)
+ *         example: 10
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         description: Search term to match loan title or description
+ *         example: "business"
+ *       - in: query
+ *         name: minAmount
+ *         schema:
+ *           type: number
+ *         description: Minimum requested amount to filter
+ *         example: 1000
+ *       - in: query
+ *         name: maxAmount
+ *         schema:
+ *           type: number
+ *         description: Maximum requested amount to filter
+ *         example: 50000
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PENDING, FUNDING, FULLY_FUNDED, ACTIVE, REPAID]
+ *         description: Filter loans by status
+ *         example: "PENDING"
+ *     responses:
+ *       200:
+ *         description: Borrower's loans fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "User loans fetched successfully."
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     loans:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Loan'
+ *                     page:
+ *                       type: integer
+ *                       example: 1
+ *                     pageSize:
+ *                       type: integer
+ *                       example: 10
+ *                     totalCount:
+ *                       type: integer
+ *                       example: 2
+ *                     totalPages:
+ *                       type: integer
+ *                       example: 1
+ *             examples:
+ *               success:
+ *                 summary: Sample response
+ *                 value:
+ *                   success: true
+ *                   message: "User loans fetched successfully."
+ *                   data:
+ *                     loans:
+ *                       - id: "123e4567-e89b-12d3-a456-426614174001"
+ *                         title: "Business Expansion Loan"
+ *                         description: "Loan for expanding my restaurant business"
+ *                         amountRequested: 50000
+ *                         amountFunded: 35000
+ *                         interestRate: 12.5
+ *                         duration: 24
+ *                         durationUnit: "MONTHS"
+ *                         totalInterest: 12500.0
+ *                         status: "FUNDING"
+ *                         createdAt: "2024-09-15T10:30:00.000Z"
+ *                         updatedAt: "2024-09-20T14:15:00.000Z"
+ *                     page: 1
+ *                     pageSize: 10
+ *                     totalCount: 1
+ *                     totalPages: 1
+ *       400:
+ *         description: Validation error for query parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Access denied or email verification required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.get(
+  "/my-loans",
+  authenticateToken,
+  requireEmailVerification,
+  requireRole(Role.BORROWER),
+  getMyLoans
+);
+
+/**
+ * @swagger
  * /api/loans/{id}/fund:
  *   post:
  *     summary: Fund a loan
@@ -462,9 +600,13 @@ router.post(
  *         name: sortBy
  *         schema:
  *           type: string
- *           enum: [createdAt, amountRequested, interestRate]
- *           default: createdAt
- *         description: Sort field
+ *           enum: [createdAt_asc, createdAt_desc, amountRequested_asc, amountRequested_desc, interestRate_asc, interestRate_desc]
+ *           default: createdAt_desc
+ *         description: |
+ *           Sort field and order. Accepts either a full value with direction
+ *           (e.g. `createdAt_desc`, `amountRequested_asc`) or a plain field name
+ *           (e.g. `createdAt`). When a plain field name is provided the default
+ *           ordering is descending (equivalent to `<field>_desc`).
  *     responses:
  *       200:
  *         description: Open loans retrieved successfully

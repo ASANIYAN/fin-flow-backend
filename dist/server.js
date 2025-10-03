@@ -12,6 +12,7 @@ const loanRoutes_1 = __importDefault(require("./routes/loanRoutes"));
 const swagger_1 = require("./config/swagger");
 const paystackRoutes_1 = __importDefault(require("./routes/paystackRoutes"));
 const walletRoutes_1 = __importDefault(require("./routes/walletRoutes"));
+const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 8000;
@@ -29,6 +30,7 @@ app.use("/api/auth", authRoutes_1.default);
 app.use("/api/loans", loanRoutes_1.default);
 app.use("/api/paystack", paystackRoutes_1.default);
 app.use("/api/wallet", walletRoutes_1.default);
+app.use("/api/user", userRoutes_1.default);
 app.get("/", (req, res) => {
     res.status(200).json({ message: "Welcome to Finflow API!" });
 });

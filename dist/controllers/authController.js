@@ -14,7 +14,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.resetPassword = exports.forgotPassword = exports.login = exports.verifyEmail = exports.signup = exports.sendVerificationEmail = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const prisma_1 = require("../../generated/prisma");
 // Import Prisma for error handling - use the main client types since they're the same
 const Prisma = process.env.NODE_ENV === "test"
     ? require("../../generated/prisma-test").Prisma
@@ -22,6 +21,7 @@ const Prisma = process.env.NODE_ENV === "test"
 const message_1 = require("../utils/message");
 const emailService_1 = require("../utils/emailService");
 const userService_1 = require("../services/userService");
+const validation_1 = require("../utils/validation");
 const sendVerificationEmail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { email } = req.body;
@@ -51,22 +51,64 @@ const sendVerificationEmail = (req, res) => __awaiter(void 0, void 0, void 0, fu
 });
 exports.sendVerificationEmail = sendVerificationEmail;
 const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email, password, confirmPassword, firstName, lastName, role } = req.body;
+    // Define validation schema for signup
+    const signupValidationSchema = {
+        email: {
+            type: "string",
+            required: true,
+            minLength: 5,
+            maxLength: 255,
+        },
+        password: {
+            type: "string",
+            required: true,
+            minLength: 8,
+            maxLength: 128,
+        },
+        confirmPassword: {
+            type: "string",
+            required: true,
+            minLength: 8,
+            maxLength: 128,
+        },
+        firstName: {
+            type: "string",
+            required: true,
+            minLength: 1,
+            maxLength: 50,
+        },
+        lastName: {
+            type: "string",
+            required: true,
+            minLength: 1,
+            maxLength: 50,
+        },
+        role: {
+            type: "string",
+            required: true,
+            enum: ["BORROWER", "LENDER"],
+        },
+    };
+    // Validate request data
+    if (!(0, validation_1.validateAndRespond)(req.body, signupValidationSchema, res)) {
+        return; // Response already sent by validateAndRespond
+    }
+    // Additional validation for password confirmation
+    if (password !== confirmPassword) {
+        return (0, message_1.errorResponse)(res, 400, "Passwords do not match", {
+            code: "VALIDATION_ERROR",
+            fields: [
+                {
+                    field: "confirmPassword",
+                    message: "Password confirmation does not match the password",
+                    expectedType: "string",
+                    receivedType: "string",
+                },
+            ],
+        });
+    }
     try {
-        const { email, password, confirmPassword, firstName, lastName, role } = req.body;
-        if (!email ||
-            !password ||
-            !confirmPassword ||
-            !firstName ||
-            !lastName ||
-            !role) {
-            return (0, message_1.errorResponse)(res, 400, "All fields are required");
-        }
-        if (password !== confirmPassword) {
-            return (0, message_1.errorResponse)(res, 400, "Passwords do not match");
-        }
-        if (!Object.values(prisma_1.Role).includes(role)) {
-            return (0, message_1.errorResponse)(res, 400, "Invalid role provided");
-        }
         const newUser = yield (0, userService_1.createUser)(email, password, firstName, lastName, role);
         // Send verification email
         const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${newUser.verificationToken}`;
@@ -114,11 +156,26 @@ const verifyEmail = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 });
 exports.verifyEmail = verifyEmail;
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    // Define validation schema for login
+    const loginValidationSchema = {
+        email: {
+            type: "string",
+            required: true,
+            minLength: 5,
+            maxLength: 255,
+        },
+        password: {
+            type: "string",
+            required: true,
+            minLength: 1,
+        },
+    };
+    // Validate request data
+    if (!(0, validation_1.validateAndRespond)(req.body, loginValidationSchema, res)) {
+        return; // Response already sent by validateAndRespond
+    }
+    const { email, password } = req.body;
     try {
-        const { email, password } = req.body;
-        if (!email || !password) {
-            return (0, message_1.errorResponse)(res, 400, "Email and password are required");
-        }
         const user = yield (0, userService_1.findUserByEmail)(email);
         if (!user) {
             return (0, message_1.errorResponse)(res, 401, "Invalid email or password");
@@ -131,9 +188,16 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         if (!user.isEmailVerified) {
             return (0, message_1.errorResponse)(res, 403, "Please verify your email address before logging in");
         }
-        // Generate JWT
-        const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1h" } // Token expires in 1 hour
+        // Generate JWT with 24 hour expiry
+        const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "24h" } // Token expires in 24 hours
         );
+        // Decode token to extract issued at and expiry
+        const decoded = jsonwebtoken_1.default.decode(token);
+        const tokenData = decoded || {};
+        // Compute expireAt from token 'exp' claim if present, otherwise fallback to 24h from now
+        const expireAt = tokenData.exp
+            ? new Date(tokenData.exp * 1000).toISOString()
+            : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         const userData = {
             id: user.id,
             email: user.email,
@@ -143,7 +207,10 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             isEmailVerified: user.isEmailVerified,
         };
         return (0, message_1.successResponse)(res, 200, "Login successful", {
-            token,
+            token: {
+                value: token,
+                expiresAt: expireAt,
+            },
             user: userData,
         });
     }

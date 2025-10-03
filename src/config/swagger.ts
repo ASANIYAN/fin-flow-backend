@@ -1,4 +1,5 @@
 import swaggerJSDoc, { Options } from "swagger-jsdoc";
+import path from "path";
 
 const options: Options = {
   definition: {
@@ -39,7 +40,7 @@ const options: Options = {
               type: "string",
               format: "email",
               description: "User email address",
-              example: "user@example.com",
+              example: "fostogokka@necub.com",
             },
             firstName: {
               type: "string",
@@ -61,6 +62,25 @@ const options: Options = {
               type: "boolean",
               description: "Whether the user email is verified",
               example: false,
+            },
+            emailVerifiedAt: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              description: "Timestamp when email was verified",
+              example: "2024-01-01T00:00:00.000Z",
+            },
+            availableBalance: {
+              type: "number",
+              format: "decimal",
+              description: "Funds ready for use/withdrawal",
+              example: 50000.0,
+            },
+            escrowBalance: {
+              type: "number",
+              format: "decimal",
+              description: "Funds committed to PENDING/FUNDING loans",
+              example: 10000.0,
             },
             createdAt: {
               type: "string",
@@ -85,18 +105,18 @@ const options: Options = {
               type: "string",
               format: "email",
               description: "User email address",
-              example: "user@example.com",
+              example: "fostogokka@necub.com",
             },
             password: {
               type: "string",
               minLength: 8,
               description: "User password (minimum 8 characters)",
-              example: "Password123!",
+              example: "Fostogokka123#&",
             },
             confirmPassword: {
               type: "string",
               description: "Password confirmation (must match password)",
-              example: "Password123!",
+              example: "Fostogokka123#&",
             },
             firstName: {
               type: "string",
@@ -124,12 +144,12 @@ const options: Options = {
               type: "string",
               format: "email",
               description: "User email address",
-              example: "user@example.com",
+              example: "fostogokka@necub.com",
             },
             password: {
               type: "string",
               description: "User password",
-              example: "Password123!",
+              example: "Fostogokka123#&",
             },
           },
         },
@@ -141,7 +161,7 @@ const options: Options = {
               type: "string",
               format: "email",
               description: "User email address for password reset",
-              example: "user@example.com",
+              example: "fostogokka@necub.com",
             },
           },
         },
@@ -158,7 +178,7 @@ const options: Options = {
               type: "string",
               minLength: 8,
               description: "New password (minimum 8 characters)",
-              example: "NewPassword123!",
+              example: "NewFostogokka123#&",
             },
           },
         },
@@ -180,9 +200,22 @@ const options: Options = {
                   $ref: "#/components/schemas/User",
                 },
                 token: {
-                  type: "string",
-                  description: "JWT authentication token",
-                  example: "",
+                  type: "object",
+                  description: "Authentication token object",
+                  properties: {
+                    value: {
+                      type: "string",
+                      description: "JWT authentication token",
+                      example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    },
+                    expiresAt: {
+                      type: "string",
+                      format: "date-time",
+                      description: "Token expiration timestamp (ISO 8601)",
+                      example: "2025-09-29T12:34:56.000Z",
+                    },
+                  },
+                  required: ["value", "expiresAt"],
                 },
               },
             },
@@ -255,9 +288,15 @@ const options: Options = {
                 "Total interest amount calculated based on amount, rate, and duration",
               example: 12500.0,
             },
+            principalRepaid: {
+              type: "number",
+              format: "decimal",
+              description: "Amount of principal that has been repaid",
+              example: 0.0,
+            },
             status: {
               type: "string",
-              enum: ["PENDING", "FUNDING", "FUNDED", "COMPLETED", "CANCELLED"],
+              enum: ["PENDING", "FUNDING", "FULLY_FUNDED", "ACTIVE", "REPAID"],
               description: "Current loan status",
               example: "PENDING",
             },
@@ -552,7 +591,7 @@ const options: Options = {
               type: "string",
               format: "email",
               description: "User email address",
-              example: "user@example.com",
+              example: "fostogokka@necub.com",
             },
             firstName: {
               type: "string",
@@ -574,6 +613,18 @@ const options: Options = {
               type: "boolean",
               description: "Whether the user email is verified",
               example: true,
+            },
+            availableBalance: {
+              type: "number",
+              format: "decimal",
+              description: "Funds ready for use/withdrawal",
+              example: 50000.0,
+            },
+            escrowBalance: {
+              type: "number",
+              format: "decimal",
+              description: "Funds committed to PENDING/FUNDING loans",
+              example: 10000.0,
             },
             createdAt: {
               type: "string",
@@ -606,18 +657,20 @@ const options: Options = {
             },
             type: {
               type: "string",
-              enum: ["DEPOSIT", "WITHDRAWAL", "LOAN_FUNDING", "LOAN_REPAYMENT"],
+              enum: [
+                "DEPOSIT",
+                "FUNDING_COMMIT",
+                "FUNDING_RELEASE",
+                "DISBURSEMENT",
+                "REPAYMENT",
+                "WITHDRAWAL",
+              ],
               description: "Type of transaction",
               example: "DEPOSIT",
             },
-            status: {
-              type: "string",
-              enum: ["PENDING", "COMPLETED", "FAILED"],
-              description: "Transaction status",
-              example: "COMPLETED",
-            },
             description: {
               type: "string",
+              nullable: true,
               description: "Transaction description",
               example: "Deposit via Paystack, Ref: ref_123456789",
             },
@@ -645,11 +698,23 @@ const options: Options = {
               description: "Transaction creation timestamp",
               example: "2024-01-01T00:00:00.000Z",
             },
-            updatedAt: {
-              type: "string",
-              format: "date-time",
-              description: "Transaction last update timestamp",
-              example: "2024-01-01T00:00:00.000Z",
+          },
+        },
+      },
+      responses: {
+        UnauthorizedError: {
+          description: "Authentication required or token invalid",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
+        },
+        InternalServerError: {
+          description: "Internal server error",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
             },
           },
         },
@@ -664,8 +729,19 @@ const options: Options = {
     },
   },
   apis: [
-    __dirname + "/../routes/*.ts", // Current working path for routes
+    // Use project cwd so swagger-jsdoc can locate route source files reliably
+    path.join(process.cwd(), "src/routes/*.ts"),
   ],
 };
-
 export const specs = swaggerJSDoc(options);
+
+// Safe debug logs - cast to any to avoid TS errors and guard presence of paths
+const _specsAny = specs as any;
+console.log(
+  "Swagger specs generated. Paths count:",
+  _specsAny.paths ? Object.keys(_specsAny.paths).length : 0
+);
+console.log(
+  "Paths found:",
+  _specsAny.paths ? Object.keys(_specsAny.paths) : "No paths"
+);

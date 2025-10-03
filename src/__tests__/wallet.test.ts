@@ -104,8 +104,6 @@ describe("Wallet Endpoints", () => {
 
     // Clean up test data before each test (order matters for foreign keys)
     await prisma.transaction.deleteMany({});
-    await prisma.emailVerificationToken.deleteMany({});
-    await prisma.passwordResetToken.deleteMany({});
     await prisma.loan.deleteMany({});
     await prisma.user.deleteMany({});
 
@@ -118,7 +116,8 @@ describe("Wallet Endpoints", () => {
         lastName: "User",
         role: "LENDER",
         isEmailVerified: true,
-        balance: 50000, // Starting balance
+        availableBalance: 50000, // Starting balance
+        escrowBalance: 0,
       },
     });
 
@@ -166,7 +165,10 @@ describe("Wallet Endpoints", () => {
       expect(res.statusCode).toEqual(400);
       expect(res.body).toHaveProperty("success", false);
       expect(res.body.message).toContain(
-        "Invalid amount or transaction reference"
+        "Validation failed for fields: reference"
+      );
+      expect(res.body.message).toContain(
+        "reference is required and cannot be empty"
       );
     });
 
@@ -364,10 +366,10 @@ describe("Wallet Endpoints", () => {
       // Check if balance was updated
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { balance: true },
+        select: { availableBalance: true },
       });
 
-      expect(user?.balance.toNumber()).toEqual(65000); // 50000 + 15000
+      expect(user?.availableBalance.toNumber()).toEqual(65000); // 50000 + 15000
     });
 
     it("should update user balance after withdrawal", async () => {
@@ -385,10 +387,10 @@ describe("Wallet Endpoints", () => {
       // Check if balance was updated
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { balance: true },
+        select: { availableBalance: true },
       });
 
-      expect(user?.balance.toNumber()).toEqual(40000); // 50000 - 10000
+      expect(user?.availableBalance.toNumber()).toEqual(40000); // 50000 - 10000
     });
 
     it("should create transaction records", async () => {

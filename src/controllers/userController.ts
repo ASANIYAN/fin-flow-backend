@@ -6,6 +6,7 @@ import {
 } from "../services/userService";
 import { AuthenticatedRequest } from "../types/auth";
 import { errorResponse, successResponse } from "../utils/message";
+import { validateAndRespond, ValidationSchema } from "../utils/validation";
 
 export const getUserProfile = async (
   req: AuthenticatedRequest,
@@ -37,6 +38,33 @@ export const updateUserProfile = async (
   const user = req.user;
   const updateData = req.body;
 
+  // Define validation schema for profile update
+  const profileUpdateValidationSchema: ValidationSchema = {
+    firstName: {
+      type: "string",
+      required: false,
+      minLength: 1,
+      maxLength: 50,
+    },
+    lastName: {
+      type: "string",
+      required: false,
+      minLength: 1,
+      maxLength: 50,
+    },
+    email: {
+      type: "string",
+      required: false,
+      minLength: 5,
+      maxLength: 255,
+    },
+  };
+
+  // Validate request data
+  if (!validateAndRespond(updateData, profileUpdateValidationSchema, res)) {
+    return; // Response already sent by validateAndRespond
+  }
+
   try {
     const updatedProfile = await updateUserProfileService(user.id, updateData);
     return successResponse(
@@ -57,6 +85,32 @@ export const updateUserProfile = async (
 export const getUserTransactions = async (req: Request, res: Response) => {
   const user = (req as AuthenticatedRequest).user;
   const { page, pageSize, q } = req.query;
+
+  // Define validation schema for query parameters
+  const queryValidationSchema: ValidationSchema = {
+    page: {
+      type: "number",
+      required: false,
+      min: 1,
+    },
+    pageSize: {
+      type: "number",
+      required: false,
+      min: 1,
+      max: 100,
+    },
+    q: {
+      type: "string",
+      required: false,
+      maxLength: 255,
+    },
+  };
+
+  // Validate query parameters
+  const queryData = { page, pageSize, q };
+  if (!validateAndRespond(queryData, queryValidationSchema, res)) {
+    return; // Response already sent by validateAndRespond
+  }
 
   // Parse query parameters with default values
   const pageNumber = parseInt(page as string) || 1;

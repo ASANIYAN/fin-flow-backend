@@ -30,7 +30,8 @@ describe("Schema Field Validation Tests", () => {
         verificationToken: "string?",
         createdAt: "DateTime",
         updatedAt: "DateTime",
-        balance: "Decimal",
+        availableBalance: "Decimal",
+        escrowBalance: "Decimal",
       };
 
       // This test will fail at compile time if any field is missing from the schema
@@ -48,7 +49,8 @@ describe("Schema Field Validation Tests", () => {
             verificationToken: true,
             createdAt: true,
             updatedAt: true,
-            balance: true,
+            availableBalance: true,
+            escrowBalance: true,
           },
         });
       }).not.toThrow();
@@ -266,7 +268,7 @@ describe("Schema Field Validation Tests", () => {
       expect(() => {
         prisma.user.update({
           where: { id: "user-id" },
-          data: { balance: 1000 },
+          data: { availableBalance: 1000 },
         });
       }).not.toThrow();
     });
@@ -316,13 +318,7 @@ describe("Schema Field Validation Tests", () => {
       });
 
       // Test LoanStatus enum values
-      const loanStatuses = [
-        "PENDING",
-        "FUNDING",
-        "FUNDED",
-        "COMPLETED",
-        "CANCELLED",
-      ];
+      const loanStatuses = ["PENDING", "FUNDING", "FUNDED", "REPAID"];
       loanStatuses.forEach((status) => {
         expect(() => {
           prisma.loan.update({

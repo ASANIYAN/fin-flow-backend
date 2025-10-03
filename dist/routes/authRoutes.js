@@ -29,7 +29,6 @@ const router = (0, express_1.Router)();
  *                 example: "john.doe@example.com"
  *               password:
  *                 type: string
- *                 minLength: 6
  *                 example: "securePassword123"
  *               confirmPassword:
  *                 type: string
@@ -76,36 +75,14 @@ router.post("/signup", authController_1.signup);
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - email
- *               - password
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 example: "john.doe@example.com"
- *               password:
- *                 type: string
- *                 example: "securePassword123"
+ *             $ref: '#/components/schemas/LoginRequest'
  *     responses:
  *       200:
  *         description: Login successful
  *         content:
  *           application/json:
  *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/ApiResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         token:
- *                           type: string
- *                           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *                         user:
- *                           $ref: '#/components/schemas/User'
+ *               $ref: '#/components/schemas/AuthResponse'
  *       401:
  *         description: Invalid credentials
  *         content:

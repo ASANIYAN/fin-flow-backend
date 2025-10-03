@@ -7,9 +7,11 @@ import {
   getBorrowerDashboardData,
   getLenderDashboardData,
   getOpenLoansService,
+  getAllLoansByBorrower,
 } from "../services/loanService";
 import { errorResponse, successResponse } from "../utils/message";
 import { AuthenticatedRequest } from "../types/auth";
+import { validateAndRespond, ValidationSchema } from "../utils/validation";
 
 export const getDashboardData = async (req: Request, res: Response) => {
   const user = (req as AuthenticatedRequest).user;
@@ -41,9 +43,9 @@ export const getDashboardData = async (req: Request, res: Response) => {
     return errorResponse(res, 500, "An unexpected error occurred");
   }
 };
-
 export const createLoan = async (req: Request, res: Response) => {
   const user = (req as AuthenticatedRequest).user;
+  // Destructure initial values (they will be strings from req.body)
   const {
     title,
     description,
@@ -53,28 +55,80 @@ export const createLoan = async (req: Request, res: Response) => {
     durationUnit,
   } = req.body;
 
-  // Basic validation to ensure required fields are present
-  if (!title || !amountRequested || !interestRate || !duration) {
-    return errorResponse(res, 400, "Missing required loan fields.");
+  // Define validation schema for loan creation
+  const loanValidationSchema: ValidationSchema = {
+    title: {
+      type: "string",
+      required: true,
+      minLength: 1,
+      maxLength: 100,
+    },
+    description: {
+      type: "string",
+      required: false,
+      maxLength: 500,
+    },
+    amountRequested: {
+      type: "number",
+      required: true,
+      min: 0.01,
+      max: 1000000,
+    },
+    interestRate: {
+      type: "number",
+      required: true,
+      min: 0,
+      max: 100,
+    },
+    duration: {
+      type: "number",
+      required: true,
+      min: 1,
+      max: 1000,
+    },
+    durationUnit: {
+      type: "string",
+      required: false,
+      enum: ["DAYS", "WEEKS", "MONTHS", "YEARS"],
+    },
+  };
+
+  // 1. Validate request data
+  // If validation fails, validateAndRespond sends the 400 error response
+  // and returns false. The 'return;' stops execution here.
+  if (!validateAndRespond(req.body, loanValidationSchema, res)) {
+    return;
   }
 
-  // Validate durationUnit if provided (defaults to MONTHS in schema if not provided)
-  const validDurationUnits = ["DAYS", "WEEKS", "MONTHS", "YEARS"];
-  if (durationUnit && !validDurationUnits.includes(durationUnit)) {
-    return errorResponse(
-      res,
-      400,
-      "Invalid duration unit. Must be one of: DAYS, WEEKS, MONTHS, YEARS"
-    );
-  }
-
+  // 2. Data Preparation (Casting)
   try {
+    // FIX: Explicitly cast the string values from req.body to their correct numeric types
+    // This prevents the internal database error (which would result in a 500)
+    const numericAmountRequested = parseFloat(amountRequested);
+    const numericInterestRate = parseFloat(interestRate);
+    const integerDuration = parseInt(duration, 10);
+
+    // Safety check (redundant after robust validation, but good practice)
+    if (
+      isNaN(numericAmountRequested) ||
+      isNaN(numericInterestRate) ||
+      isNaN(integerDuration)
+    ) {
+      // This should not happen if validation passed, but acts as a final safeguard
+      return errorResponse(
+        res,
+        400,
+        "Validation error: Invalid numeric format after casting.",
+        { code: "CASTING_ERROR" }
+      );
+    }
+
     const loanData = {
       title,
       description,
-      amountRequested,
-      interestRate,
-      duration,
+      amountRequested: numericAmountRequested, // Use parsed number
+      interestRate: numericInterestRate, // Use parsed number
+      duration: integerDuration, // Use parsed integer
       durationUnit: durationUnit || "MONTHS", // Default to MONTHS if not provided
       borrowerId: user.id, // Attach the authenticated user's ID
     };
@@ -89,6 +143,19 @@ export const createLoan = async (req: Request, res: Response) => {
     );
   } catch (error) {
     console.error("Error creating loan:", error);
+
+    // Handle custom validation errors from service
+    if (error && typeof error === "object" && "code" in error) {
+      const customError = error as any;
+      if (customError.code === "BAD_REQUEST") {
+        return errorResponse(res, 400, customError.message, {
+          code: customError.code,
+          details: customError.details,
+        });
+      }
+    }
+
+    // This catches genuine, unhandled server errors (e.g., database connection down)
     return errorResponse(res, 500, "An unexpected error occurred.");
   }
 };
@@ -98,9 +165,18 @@ export const fundLoan = async (req: Request, res: Response) => {
   const { amount } = req.body;
   const user = (req as AuthenticatedRequest).user;
 
-  // Basic validation for amount
-  if (!amount || typeof amount !== "number" || amount <= 0) {
-    return errorResponse(res, 400, "Invalid funding amount provided.");
+  // Define validation schema for loan funding
+  const fundingValidationSchema: ValidationSchema = {
+    amount: {
+      type: "number",
+      required: true,
+      min: 0.01,
+    },
+  };
+
+  // Validate request data
+  if (!validateAndRespond({ amount }, fundingValidationSchema, res)) {
+    return; // Response already sent by validateAndRespond
   }
 
   try {
@@ -120,15 +196,117 @@ export const fundLoan = async (req: Request, res: Response) => {
 };
 
 export const getOpenLoans = async (req: Request, res: Response) => {
-  try {
-    const { page, pageSize, q, minAmount, maxAmount, sortBy } = req.query;
+  const { page, pageSize, q, minAmount, maxAmount, sortBy } = req.query;
 
-    const pageNumber = parseInt(page as string) || 1;
-    const size = parseInt(pageSize as string) || 10;
-    const min = parseFloat(minAmount as string);
-    const max = parseFloat(maxAmount as string);
-    const query = q as string;
-    const sort = sortBy as string;
+  // Define validation schema for query parameters
+  const queryValidationSchema: ValidationSchema = {
+    page: {
+      type: "number",
+      required: false,
+      min: 1,
+    },
+    pageSize: {
+      type: "number",
+      required: false,
+      min: 1,
+      max: 100,
+    },
+    q: {
+      type: "string",
+      required: false,
+      maxLength: 100,
+    },
+    minAmount: {
+      type: "number",
+      required: false,
+      min: 0,
+    },
+    maxAmount: {
+      type: "number",
+      required: false,
+      min: 0,
+    },
+    sortBy: {
+      type: "string",
+      required: false,
+      enum: [
+        "createdAt_asc",
+        "createdAt_desc",
+        "amountRequested_asc",
+        "amountRequested_desc",
+        "interestRate_asc",
+        "interestRate_desc",
+      ],
+    },
+  };
+
+  // Convert query parameters to appropriate types for validation
+  const queryData = {
+    page: page ? parseInt(page as string) : undefined,
+    pageSize: pageSize ? parseInt(pageSize as string) : undefined,
+    q: q as string,
+    minAmount: minAmount ? parseFloat(minAmount as string) : undefined,
+    maxAmount: maxAmount ? parseFloat(maxAmount as string) : undefined,
+    sortBy: sortBy as string,
+  };
+
+  // Validate query parameters
+  if (!validateAndRespond(queryData, queryValidationSchema, res)) {
+    return; // Response already sent by validateAndRespond
+  }
+
+  try {
+    const pageNumber = queryData.page || 1;
+    const size = queryData.pageSize || 10;
+    const query = queryData.q;
+    const min = queryData.minAmount;
+    const max = queryData.maxAmount;
+    // Normalize and validate sortBy: accept either plain field names (e.g. "createdAt")
+    // or full directioned values (e.g. "createdAt_desc"). If a plain field is
+    // provided we default to descending order.
+    const allowedFields = ["createdAt", "amountRequested", "interestRate"];
+
+    let sort: string | undefined = undefined;
+    if (queryData.sortBy) {
+      const rawSort = String(queryData.sortBy).trim();
+      if (allowedFields.includes(rawSort)) {
+        // default ordering for plain fields
+        sort = `${rawSort}_desc`;
+      } else {
+        const m = rawSort.match(/^(.+)_(asc|desc)$/i);
+        if (m) {
+          const field = m[1];
+          const dir = m[2].toLowerCase();
+          if (
+            allowedFields.includes(field) &&
+            (dir === "asc" || dir === "desc")
+          ) {
+            sort = `${field}_${dir}`;
+          }
+        }
+      }
+
+      if (!sort) {
+        // Return the same message shape used elsewhere for validation errors
+        return errorResponse(
+          res,
+          400,
+          "Validation failed for fields: sortBy. sortBy must be one of: createdAt_asc, createdAt_desc, amountRequested_asc, amountRequested_desc, interestRate_asc, interestRate_desc",
+          {
+            code: "VALIDATION_ERROR",
+            fields: [
+              {
+                field: "sortBy",
+                message:
+                  "sortBy must be one of: createdAt_asc, createdAt_desc, amountRequested_asc, amountRequested_desc, interestRate_asc, interestRate_desc",
+                expectedType: "string",
+                receivedType: typeof queryData.sortBy,
+              },
+            ],
+          }
+        );
+      }
+    }
 
     const { loans, totalCount, totalPages } = await getOpenLoansService(
       pageNumber,
@@ -153,6 +331,78 @@ export const getOpenLoans = async (req: Request, res: Response) => {
     );
   } catch (error) {
     console.error("Error fetching open loans:", error);
+    return errorResponse(res, 500, "An unexpected error occurred.");
+  }
+};
+
+export const getMyLoans = async (req: Request, res: Response) => {
+  const user = (req as AuthenticatedRequest).user;
+
+  // Only borrowers can fetch their loans
+  if (user.role !== "BORROWER") {
+    return errorResponse(
+      res,
+      403,
+      "Access denied. Only borrowers can view their loans."
+    );
+  }
+
+  const { page, pageSize, q, minAmount, maxAmount, status } = req.query;
+
+  // Validation schema for query parameters
+  const queryValidationSchema: ValidationSchema = {
+    page: { type: "number", required: false, min: 1 },
+    pageSize: { type: "number", required: false, min: 1, max: 100 },
+    q: { type: "string", required: false, maxLength: 100 },
+    minAmount: { type: "number", required: false, min: 0 },
+    maxAmount: { type: "number", required: false, min: 0 },
+    status: {
+      type: "string",
+      required: false,
+      enum: ["PENDING", "FUNDING", "FUNDED", "REPAID"],
+    },
+  };
+
+  const queryData = {
+    page: page ? parseInt(page as string) : undefined,
+    pageSize: pageSize ? parseInt(pageSize as string) : undefined,
+    q: q as string,
+    minAmount: minAmount ? parseFloat(minAmount as string) : undefined,
+    maxAmount: maxAmount ? parseFloat(maxAmount as string) : undefined,
+    status: status as string,
+  };
+
+  if (!validateAndRespond(queryData, queryValidationSchema, res)) {
+    return;
+  }
+
+  try {
+    const pageNumber = queryData.page || 1;
+    const size = queryData.pageSize || 10;
+    const query = queryData.q;
+    const min = queryData.minAmount;
+    const max = queryData.maxAmount;
+    const st = queryData.status;
+
+    const { loans, totalCount, totalPages } = await getAllLoansByBorrower(
+      user.id,
+      pageNumber,
+      size,
+      query,
+      min,
+      max,
+      st
+    );
+
+    return successResponse(res, 200, "User loans fetched successfully.", {
+      loans,
+      page: pageNumber,
+      pageSize: size,
+      totalCount,
+      totalPages,
+    });
+  } catch (error) {
+    console.error("Error fetching user loans:", error);
     return errorResponse(res, 500, "An unexpected error occurred.");
   }
 };

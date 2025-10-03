@@ -68,8 +68,6 @@ describe("Paystack Endpoints", () => {
   beforeEach(async () => {
     // Clean up test data before each test (order matters for foreign keys)
     await prisma.transaction.deleteMany({});
-    await prisma.emailVerificationToken.deleteMany({});
-    await prisma.passwordResetToken.deleteMany({});
     await prisma.loan.deleteMany({});
     await prisma.user.deleteMany({});
 
@@ -114,7 +112,8 @@ describe("Paystack Endpoints", () => {
           lastName: "User",
           role: "LENDER",
           isEmailVerified: true,
-          balance: 0,
+          availableBalance: 0,
+          escrowBalance: 0,
         },
       });
     });

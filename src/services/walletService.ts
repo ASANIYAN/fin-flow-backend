@@ -40,11 +40,14 @@ export const depositFundsService = async (
     }
 
     // 3. Update the user's wallet balance
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    const newBalance = (user?.balance.toNumber() || 0) + amount;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { availableBalance: true, escrowBalance: true },
+    });
+    const newBalance = (user?.availableBalance.toNumber() || 0) + amount;
     await prisma.user.update({
       where: { id: userId },
-      data: { balance: newBalance },
+      data: { availableBalance: newBalance },
     });
 
     // 4. Create a transaction record
@@ -109,7 +112,7 @@ export const withdrawFundsService = async (
 ) => {
   return prisma.$transaction(async (prisma: any) => {
     const user = await findUserById(userId);
-    if (!user || user.balance.toNumber() < amount) {
+    if (!user || user.availableBalance.toNumber() < amount) {
       throw new Error("Insufficient funds in wallet.");
     }
 
@@ -121,10 +124,10 @@ export const withdrawFundsService = async (
     );
 
     // 2. Debit the user's wallet
-    const newBalance = user.balance.toNumber() - amount;
+    const newBalance = user.availableBalance.toNumber() - amount;
     await prisma.user.update({
       where: { id: userId },
-      data: { balance: newBalance },
+      data: { availableBalance: newBalance },
     });
 
     // 3. Initiate the transfer with Paystack

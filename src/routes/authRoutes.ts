@@ -36,7 +36,6 @@ const router = Router();
  *                 example: "john.doe@example.com"
  *               password:
  *                 type: string
- *                 minLength: 6
  *                 example: "securePassword123"
  *               confirmPassword:
  *                 type: string
@@ -72,7 +71,6 @@ const router = Router();
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post("/signup", signup);
-
 /**
  * @swagger
  * /api/auth/login:
@@ -84,36 +82,14 @@ router.post("/signup", signup);
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - email
- *               - password
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 example: "fostogokka@necub.com"
- *               password:
- *                 type: string
- *                 example: "Fostogokka123#&"
+ *             $ref: '#/components/schemas/LoginRequest'
  *     responses:
  *       200:
  *         description: Login successful
  *         content:
  *           application/json:
  *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/ApiResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         token:
- *                           type: string
- *                           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *                         user:
- *                           $ref: '#/components/schemas/User'
+ *               $ref: '#/components/schemas/AuthResponse'
  *       401:
  *         description: Invalid credentials
  *         content:

@@ -41,11 +41,14 @@ const depositFundsService = (userId, amount, reference) => __awaiter(void 0, voi
             throw new Error("This transaction has already been processed.");
         }
         // 3. Update the user's wallet balance
-        const user = yield prisma.user.findUnique({ where: { id: userId } });
-        const newBalance = ((user === null || user === void 0 ? void 0 : user.balance.toNumber()) || 0) + amount;
+        const user = yield prisma.user.findUnique({
+            where: { id: userId },
+            select: { availableBalance: true, escrowBalance: true },
+        });
+        const newBalance = ((user === null || user === void 0 ? void 0 : user.availableBalance.toNumber()) || 0) + amount;
         yield prisma.user.update({
             where: { id: userId },
-            data: { balance: newBalance },
+            data: { availableBalance: newBalance },
         });
         // 4. Create a transaction record
         yield prisma.transaction.create({
@@ -90,16 +93,16 @@ const initiateTransfer = (amount, recipientCode) => __awaiter(void 0, void 0, vo
 const withdrawFundsService = (userId, amount, accountNumber, bankCode) => __awaiter(void 0, void 0, void 0, function* () {
     return prisma.$transaction((prisma) => __awaiter(void 0, void 0, void 0, function* () {
         const user = yield (0, userService_1.findUserById)(userId);
-        if (!user || user.balance.toNumber() < amount) {
+        if (!user || user.availableBalance.toNumber() < amount) {
             throw new Error("Insufficient funds in wallet.");
         }
         // 1. Create a transfer recipient with Paystack
         const recipientCode = yield createTransferRecipient(`${user.firstName} ${user.lastName}`, accountNumber, bankCode);
         // 2. Debit the user's wallet
-        const newBalance = user.balance.toNumber() - amount;
+        const newBalance = user.availableBalance.toNumber() - amount;
         yield prisma.user.update({
             where: { id: userId },
-            data: { balance: newBalance },
+            data: { availableBalance: newBalance },
         });
         // 3. Initiate the transfer with Paystack
         const transferReference = yield initiateTransfer(amount, recipientCode);

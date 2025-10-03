@@ -120,18 +120,28 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
 exports.Prisma.UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
-  password: 'password',
   firstName: 'firstName',
   lastName: 'lastName',
+  password: 'password',
   role: 'role',
   isEmailVerified: 'isEmailVerified',
   emailVerifiedAt: 'emailVerifiedAt',
   verificationToken: 'verificationToken',
-  resetPasswordToken: 'resetPasswordToken',
-  resetPasswordExpires: 'resetPasswordExpires',
-  balance: 'balance',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  availableBalance: 'availableBalance',
+  escrowBalance: 'escrowBalance'
+};
+
+exports.Prisma.TransactionScalarFieldEnum = {
+  id: 'id',
+  amount: 'amount',
+  type: 'type',
+  description: 'description',
+  externalRef: 'externalRef',
+  createdAt: 'createdAt',
+  userId: 'userId',
+  loanId: 'loanId'
 };
 
 exports.Prisma.LoanScalarFieldEnum = {
@@ -144,43 +154,11 @@ exports.Prisma.LoanScalarFieldEnum = {
   duration: 'duration',
   durationUnit: 'durationUnit',
   totalInterest: 'totalInterest',
+  principalRepaid: 'principalRepaid',
   status: 'status',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   borrowerId: 'borrowerId'
-};
-
-exports.Prisma.EmailVerificationTokenScalarFieldEnum = {
-  id: 'id',
-  email: 'email',
-  token: 'token',
-  expiresAt: 'expiresAt',
-  createdAt: 'createdAt',
-  userId: 'userId'
-};
-
-exports.Prisma.PasswordResetTokenScalarFieldEnum = {
-  id: 'id',
-  email: 'email',
-  token: 'token',
-  expiresAt: 'expiresAt',
-  createdAt: 'createdAt',
-  userId: 'userId'
-};
-
-exports.Prisma.TransactionScalarFieldEnum = {
-  id: 'id',
-  type: 'type',
-  amount: 'amount',
-  status: 'status',
-  reference: 'reference',
-  description: 'description',
-  paymentMethod: 'paymentMethod',
-  metadata: 'metadata',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  userId: 'userId',
-  loanId: 'loanId'
 };
 
 exports.Prisma.SortOrder = {
@@ -188,29 +166,22 @@ exports.Prisma.SortOrder = {
   desc: 'desc'
 };
 
-exports.Prisma.NullableJsonNullValueInput = {
-  DbNull: Prisma.DbNull,
-  JsonNull: Prisma.JsonNull
-};
-
 exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
 };
-
-exports.Prisma.JsonNullValueFilter = {
-  DbNull: Prisma.DbNull,
-  JsonNull: Prisma.JsonNull,
-  AnyNull: Prisma.AnyNull
-};
-
-exports.Prisma.QueryMode = {
-  default: 'default',
-  insensitive: 'insensitive'
-};
 exports.Role = exports.$Enums.Role = {
   BORROWER: 'BORROWER',
   LENDER: 'LENDER'
+};
+
+exports.TransactionType = exports.$Enums.TransactionType = {
+  DEPOSIT: 'DEPOSIT',
+  FUNDING_COMMIT: 'FUNDING_COMMIT',
+  FUNDING_RELEASE: 'FUNDING_RELEASE',
+  DISBURSEMENT: 'DISBURSEMENT',
+  REPAYMENT: 'REPAYMENT',
+  WITHDRAWAL: 'WITHDRAWAL'
 };
 
 exports.DurationUnit = exports.$Enums.DurationUnit = {
@@ -223,31 +194,15 @@ exports.DurationUnit = exports.$Enums.DurationUnit = {
 exports.LoanStatus = exports.$Enums.LoanStatus = {
   PENDING: 'PENDING',
   FUNDING: 'FUNDING',
-  FUNDED: 'FUNDED',
-  COMPLETED: 'COMPLETED',
-  CANCELLED: 'CANCELLED'
-};
-
-exports.TransactionType = exports.$Enums.TransactionType = {
-  DEPOSIT: 'DEPOSIT',
-  WITHDRAWAL: 'WITHDRAWAL',
-  LOAN_FUNDING: 'LOAN_FUNDING',
-  LOAN_REPAYMENT: 'LOAN_REPAYMENT'
-};
-
-exports.TransactionStatus = exports.$Enums.TransactionStatus = {
-  PENDING: 'PENDING',
-  COMPLETED: 'COMPLETED',
-  FAILED: 'FAILED',
-  CANCELLED: 'CANCELLED'
+  FULLY_FUNDED: 'FULLY_FUNDED',
+  ACTIVE: 'ACTIVE',
+  REPAID: 'REPAID'
 };
 
 exports.Prisma.ModelName = {
   User: 'User',
-  Loan: 'Loan',
-  EmailVerificationToken: 'EmailVerificationToken',
-  PasswordResetToken: 'PasswordResetToken',
-  Transaction: 'Transaction'
+  Transaction: 'Transaction',
+  Loan: 'Loan'
 };
 
 /**

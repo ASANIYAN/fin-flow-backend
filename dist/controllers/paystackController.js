@@ -22,6 +22,7 @@ if (!PAYSTACK_SECRET_KEY) {
     throw new Error("PAYSTACK_SECRET_KEY environment variable is not set.");
 }
 const handleWebhook = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const hash = req.headers["x-paystack-signature"];
     // 1. Check for the signature header
     if (!hash) {
@@ -41,8 +42,12 @@ const handleWebhook = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     // Signature is valid, so now we can trust the event
     const event = req.body;
     if (event.event === "charge.success") {
-        const reference = event.data.reference;
         try {
+            const reference = (_a = event.data) === null || _a === void 0 ? void 0 : _a.reference;
+            if (!reference) {
+                // Malformed data - acknowledge but don't process
+                return (0, message_1.successResponse)(res, 200, "Webhook received but no reference found.");
+            }
             yield (0, paystackService_1.verifyTransaction)(reference);
             // It's important to return a 200 OK to acknowledge receipt of the event
             return (0, message_1.successResponse)(res, 200, "Webhook processed successfully.");

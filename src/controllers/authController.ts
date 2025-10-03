@@ -19,6 +19,7 @@ import {
   resetUserPassword,
   verifyUser,
 } from "../services/userService";
+import { validateAndRespond, ValidationSchema } from "../utils/validation";
 
 interface SignupRequestBody {
   role: Role;
@@ -64,29 +65,69 @@ export const sendVerificationEmail = async (req: Request, res: Response) => {
 };
 
 export const signup = async (req: Request, res: Response) => {
+  const { email, password, confirmPassword, firstName, lastName, role } =
+    req.body;
+
+  // Define validation schema for signup
+  const signupValidationSchema: ValidationSchema = {
+    email: {
+      type: "string",
+      required: true,
+      minLength: 5,
+      maxLength: 255,
+    },
+    password: {
+      type: "string",
+      required: true,
+      minLength: 8,
+      maxLength: 128,
+    },
+    confirmPassword: {
+      type: "string",
+      required: true,
+      minLength: 8,
+      maxLength: 128,
+    },
+    firstName: {
+      type: "string",
+      required: true,
+      minLength: 1,
+      maxLength: 50,
+    },
+    lastName: {
+      type: "string",
+      required: true,
+      minLength: 1,
+      maxLength: 50,
+    },
+    role: {
+      type: "string",
+      required: true,
+      enum: ["BORROWER", "LENDER"],
+    },
+  };
+
+  // Validate request data
+  if (!validateAndRespond(req.body, signupValidationSchema, res)) {
+    return; // Response already sent by validateAndRespond
+  }
+
+  // Additional validation for password confirmation
+  if (password !== confirmPassword) {
+    return errorResponse(res, 400, "Passwords do not match", {
+      code: "VALIDATION_ERROR",
+      fields: [
+        {
+          field: "confirmPassword",
+          message: "Password confirmation does not match the password",
+          expectedType: "string",
+          receivedType: "string",
+        },
+      ],
+    });
+  }
+
   try {
-    const { email, password, confirmPassword, firstName, lastName, role } =
-      req.body as SignupRequestBody;
-
-    if (
-      !email ||
-      !password ||
-      !confirmPassword ||
-      !firstName ||
-      !lastName ||
-      !role
-    ) {
-      return errorResponse(res, 400, "All fields are required");
-    }
-
-    if (password !== confirmPassword) {
-      return errorResponse(res, 400, "Passwords do not match");
-    }
-
-    if (!Object.values(Role).includes(role)) {
-      return errorResponse(res, 400, "Invalid role provided");
-    }
-
     const newUser = await createUser(
       email,
       password,
@@ -154,13 +195,29 @@ interface LoginRequestBody {
 }
 
 export const login = async (req: Request, res: Response) => {
+  // Define validation schema for login
+  const loginValidationSchema: ValidationSchema = {
+    email: {
+      type: "string",
+      required: true,
+      minLength: 5,
+      maxLength: 255,
+    },
+    password: {
+      type: "string",
+      required: true,
+      minLength: 1,
+    },
+  };
+
+  // Validate request data
+  if (!validateAndRespond(req.body, loginValidationSchema, res)) {
+    return; // Response already sent by validateAndRespond
+  }
+
+  const { email, password } = req.body;
+
   try {
-    const { email, password } = req.body as LoginRequestBody;
-
-    if (!email || !password) {
-      return errorResponse(res, 400, "Email and password are required");
-    }
-
     const user = await findUserByEmail(email);
 
     if (!user) {
@@ -182,12 +239,20 @@ export const login = async (req: Request, res: Response) => {
       );
     }
 
-    // Generate JWT
+    // Generate JWT with 24 hour expiry
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       process.env.JWT_SECRET as string,
-      { expiresIn: "1h" } // Token expires in 1 hour
+      { expiresIn: "24h" } // Token expires in 24 hours
     );
+
+    // Decode token to extract issued at and expiry
+    const decoded = jwt.decode(token) as { [key: string]: any } | null;
+    const tokenData = decoded || {};
+    // Compute expireAt from token 'exp' claim if present, otherwise fallback to 24h from now
+    const expireAt = tokenData.exp
+      ? new Date(tokenData.exp * 1000).toISOString()
+      : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
     const userData = {
       id: user.id,
@@ -199,7 +264,10 @@ export const login = async (req: Request, res: Response) => {
     };
 
     return successResponse(res, 200, "Login successful", {
-      token,
+      token: {
+        value: token,
+        expiresAt: expireAt,
+      },
       user: userData,
     });
   } catch (error) {

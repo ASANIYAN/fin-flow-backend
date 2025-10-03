@@ -5,13 +5,31 @@ import {
   depositFundsService,
   withdrawFundsService,
 } from "../services/walletService";
+import { validateAndRespond, ValidationSchema } from "../utils/validation";
 
 export const depositFunds = async (req: Request, res: Response) => {
   const user = (req as AuthenticatedRequest).user;
   const { amount, reference } = req.body;
 
-  if (!amount || !reference || typeof amount !== "number" || amount <= 0) {
-    return errorResponse(res, 400, "Invalid amount or transaction reference.");
+  // Define validation schema for deposit
+  const depositValidationSchema: ValidationSchema = {
+    amount: {
+      type: "number",
+      required: true,
+      min: 0.01,
+      max: 1000000,
+    },
+    reference: {
+      type: "string",
+      required: true,
+      minLength: 1,
+      maxLength: 100,
+    },
+  };
+
+  // Validate request data
+  if (!validateAndRespond(req.body, depositValidationSchema, res)) {
+    return; // Response already sent by validateAndRespond
   }
 
   try {
@@ -40,14 +58,31 @@ export const withdrawFunds = async (req: Request, res: Response) => {
   // Extract all necessary withdrawal details from the request body
   const { amount, accountNumber, bankCode } = req.body;
 
-  if (
-    !amount ||
-    typeof amount !== "number" ||
-    amount <= 0 ||
-    !accountNumber ||
-    !bankCode
-  ) {
-    return errorResponse(res, 400, "Invalid or missing withdrawal details.");
+  // Define validation schema for withdrawal
+  const withdrawalValidationSchema: ValidationSchema = {
+    amount: {
+      type: "number",
+      required: true,
+      min: 0.01,
+      max: 1000000,
+    },
+    accountNumber: {
+      type: "string",
+      required: true,
+      minLength: 10,
+      maxLength: 20,
+    },
+    bankCode: {
+      type: "string",
+      required: true,
+      minLength: 3,
+      maxLength: 10,
+    },
+  };
+
+  // Validate request data
+  if (!validateAndRespond(req.body, withdrawalValidationSchema, res)) {
+    return; // Response already sent by validateAndRespond
   }
 
   try {

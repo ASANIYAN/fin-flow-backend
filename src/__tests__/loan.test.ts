@@ -18,8 +18,6 @@ describe("Loan Endpoints", () => {
   beforeEach(async () => {
     // Clean up test data before each test (order matters for foreign keys)
     await prisma.transaction.deleteMany({});
-    await prisma.emailVerificationToken.deleteMany({});
-    await prisma.passwordResetToken.deleteMany({});
     await prisma.loan.deleteMany({});
     await prisma.user.deleteMany({});
 
@@ -33,7 +31,9 @@ describe("Loan Endpoints", () => {
         lastName: "Borrower",
         role: "BORROWER",
         isEmailVerified: true,
-        balance: 0,
+        emailVerifiedAt: new Date(),
+        availableBalance: 0,
+        escrowBalance: 0,
       },
     });
 
@@ -46,7 +46,9 @@ describe("Loan Endpoints", () => {
         lastName: "Lender",
         role: "LENDER",
         isEmailVerified: true,
-        balance: 50000,
+        emailVerifiedAt: new Date(),
+        availableBalance: 50000,
+        escrowBalance: 0,
       },
     });
 
@@ -202,7 +204,7 @@ describe("Loan Endpoints", () => {
       // Ensure lender has sufficient balance
       await prisma.user.update({
         where: { id: lenderId },
-        data: { balance: 50000 },
+        data: { availableBalance: 50000 },
       });
     });
 

@@ -13,40 +13,56 @@ datasource db {
 }
 
 model User {
-  id                   String    @id @default(uuid())
-  email                String    @unique
-  password             String
-  firstName            String
-  lastName             String
-  role                 Role      @default(BORROWER)
-  isEmailVerified      Boolean   @default(false)
-  emailVerifiedAt      DateTime?
-  verificationToken    String?   @unique
-  resetPasswordToken   String?   @unique
-  resetPasswordExpires DateTime?
-  balance              Decimal   @default(0)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  id                String    @id @default(uuid())
+  email             String    @unique
+  firstName         String
+  lastName          String
+  password          String
+  role              Role
+  isEmailVerified   Boolean   @default(false)
+  emailVerifiedAt   DateTime? // Timestamp when email was verified
+  verificationToken String?   @unique // Token for email verification
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  // A Lender's funded loans
-  fundedLoans Loan[] @relation("FundedLoans")
+  // ESCROW IMPLEMENTATION: Explicit balances
+  availableBalance Decimal @default(0) // Funds ready for use/withdrawal
+  escrowBalance    Decimal @default(0) // Funds committed to PENDING/FUNDING loans
 
-  // A Borrower's loan applications
   loanApplications Loan[]
-
-  // Email verification tokens
-  emailVerificationTokens EmailVerificationToken[]
-
-  // Password reset tokens
-  passwordResetTokens PasswordResetToken[]
-
-  // Transactions
-  transactions Transaction[]
+  fundedLoans      Loan[]        @relation("FundedLoans")
+  transactions     Transaction[]
 }
 
 enum Role {
   BORROWER
   LENDER
+}
+
+model Transaction {
+  id          String          @id @default(uuid())
+  amount      Decimal
+  type        TransactionType // e.g., DEPOSIT, FUNDING_DEBIT, DISBURSEMENT
+  description String?
+  externalRef String?         @unique
+  createdAt   DateTime        @default(now())
+
+  // Link to the user who owns the transaction
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String?
+
+  // Link to the loan involved in the transaction
+  loan   Loan?   @relation(fields: [loanId], references: [id])
+  loanId String?
+}
+
+enum TransactionType {
+  DEPOSIT
+  FUNDING_COMMIT // Lender's available balance is moved to their escrow balance
+  FUNDING_RELEASE // Funds moved from Lender's escrow to Borrower's available balance
+  DISBURSEMENT // Borrower's wallet credit when a loan is fully funded
+  REPAYMENT // Borrower's payment of principal and interest
+  WITHDRAWAL
 }
 
 model Loan {
@@ -59,6 +75,7 @@ model Loan {
   duration        Int // Duration value
   durationUnit    DurationUnit @default(MONTHS) // Duration unit (DAYS, WEEKS, MONTHS, YEARS)
   totalInterest   Decimal
+  principalRepaid Decimal      @default(0) // NEW: Tracks repayment progress
   status          LoanStatus   @default(PENDING)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
@@ -70,16 +87,15 @@ model Loan {
   // Link to the user who funded the loan (the Lender)
   fundedBy User[] @relation("FundedLoans")
 
-  // Transactions related to this loan
-  transactions Transaction[]
+  Transaction Transaction[]
 }
 
 enum LoanStatus {
   PENDING
-  FUNDING
-  FUNDED
-  COMPLETED
-  CANCELLED
+  FUNDING // Less than 100% funded
+  FULLY_FUNDED // 100% funded, waiting for disbursement approval
+  ACTIVE // Funds disbursed, repayment period begins
+  REPAID // Final status: Repaid (our new preferred name)
 }
 
 enum DurationUnit {
@@ -87,60 +103,4 @@ enum DurationUnit {
   WEEKS
   MONTHS
   YEARS
-}
-
-model EmailVerificationToken {
-  id        String   @id @default(uuid())
-  email     String
-  token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String
-}
-
-model PasswordResetToken {
-  id        String   @id @default(uuid())
-  email     String
-  token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String
-}
-
-model Transaction {
-  id            String            @id @default(uuid())
-  type          TransactionType
-  amount        Decimal
-  status        TransactionStatus @default(PENDING)
-  reference     String?           @unique
-  description   String?
-  paymentMethod String?
-  metadata      Json?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-
-  user   User   @relation(fields: [userId], references: [id])
-  userId String
-
-  // Optional loan relation
-  loan   Loan?   @relation(fields: [loanId], references: [id])
-  loanId String?
-}
-
-enum TransactionType {
-  DEPOSIT
-  WITHDRAWAL
-  LOAN_FUNDING
-  LOAN_REPAYMENT
-}
-
-enum TransactionStatus {
-  PENDING
-  COMPLETED
-  FAILED
-  CANCELLED
 }

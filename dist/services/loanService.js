@@ -9,8 +9,61 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getOpenLoansService = exports.fundLoanService = exports.getLenderDashboardData = exports.getBorrowerDashboardData = exports.createLoanService = void 0;
+exports.repayLoanService = exports.disburseLoanService = exports.getAllLoansByBorrower = exports.getOpenLoansService = exports.fundLoanService = exports.getLenderDashboardData = exports.getBorrowerDashboardData = exports.createLoanService = void 0;
 const prisma_1 = require("../lib/prisma");
+// Utility function to convert duration to days for consistent calculations
+const convertDurationToDays = (duration, unit) => {
+    switch (unit) {
+        case "DAYS":
+            return duration;
+        case "WEEKS":
+            return duration * 7;
+        case "MONTHS":
+            return duration * 30; // Approximate 30 days per month
+        case "YEARS":
+            return duration * 365; // Approximate 365 days per year
+        default:
+            return duration * 30; // Default to months if unit is invalid
+    }
+};
+// Utility function to convert duration to months for financial calculations
+const convertDurationToMonths = (duration, unit) => {
+    switch (unit) {
+        case "DAYS":
+            return duration / 30; // Approximate
+        case "WEEKS":
+            return duration / 4.33; // Approximate 4.33 weeks per month
+        case "MONTHS":
+            return duration;
+        case "YEARS":
+            return duration * 12;
+        default:
+            return duration; // Default to months if unit is invalid
+    }
+};
+// Utility function to calculate total interest based on amount, rate, duration and unit
+const calculateTotalInterest = (amountRequested, interestRate, duration, durationUnit) => {
+    const ratePerPeriod = interestRate / 100;
+    let periodsPerYear = 12;
+    switch (durationUnit) {
+        case prisma_1.DurationUnit.DAYS:
+            periodsPerYear = 365;
+            break;
+        case prisma_1.DurationUnit.WEEKS:
+            periodsPerYear = 52;
+            break;
+        case prisma_1.DurationUnit.YEARS:
+            periodsPerYear = 1;
+            break;
+        case prisma_1.DurationUnit.MONTHS:
+        default:
+            periodsPerYear = 12;
+            break;
+    }
+    const timeInYears = duration / periodsPerYear;
+    const totalInterest = amountRequested * ratePerPeriod * timeInYears;
+    return parseFloat(totalInterest.toFixed(2));
+};
 const DEFAULT_EARNINGS_RATE = 0.05; // 5% simplified earnings calculation
 const MAX_NEW_LISTINGS = 10;
 const prisma = new prisma_1.PrismaClient();
@@ -46,7 +99,7 @@ const getActiveLoansByBorrower = (borrowerId) => __awaiter(void 0, void 0, void 
         where: {
             borrowerId,
             status: {
-                in: [prisma_1.LoanStatus.FUNDING, prisma_1.LoanStatus.FUNDED],
+                in: [prisma_1.LoanStatus.FUNDING, prisma_1.LoanStatus.PENDING],
             },
         },
     });
@@ -111,12 +164,16 @@ const formatLoanListings = (loans) => {
  * @returns Created loan object
  */
 const createLoanService = (loanData) => __awaiter(void 0, void 0, void 0, function* () {
+    const durationUnit = loanData.durationUnit || "MONTHS";
+    const totalInterest = calculateTotalInterest(loanData.amountRequested, loanData.interestRate, loanData.duration, durationUnit);
     const prismaLoanData = {
         title: loanData.title,
         description: loanData.description,
         amountRequested: loanData.amountRequested,
         interestRate: loanData.interestRate,
         duration: loanData.duration,
+        durationUnit: durationUnit,
+        totalInterest: totalInterest,
         borrower: {
             connect: { id: loanData.borrowerId },
         },
@@ -183,76 +240,67 @@ const getLenderDashboardData = (userId) => __awaiter(void 0, void 0, void 0, fun
     };
 });
 exports.getLenderDashboardData = getLenderDashboardData;
+/**
+ * Handles a lender's commitment to fund a loan (Phase 1: Escrow).
+ * 1. Moves funds from Lender's availableBalance to escrowBalance (FUNDING_COMMIT).
+ * 2. If 100% funded, changes status to FULLY_FUNDED, awaiting manual disbursement.
+ */
 const fundLoanService = (loanId, lenderId, amount) => __awaiter(void 0, void 0, void 0, function* () {
-    return prisma.$transaction((prisma) => __awaiter(void 0, void 0, void 0, function* () {
-        // 1. Get lender and loan data, and lock the records
-        const lender = yield prisma.user.findUnique({
+    const fundingAmountDecimal = amount;
+    return prisma.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
+        const loan = yield tx.loan.findUnique({ where: { id: loanId } });
+        const lender = yield tx.user.findUnique({
             where: { id: lenderId },
+            select: { availableBalance: true, escrowBalance: true },
         });
-        const loan = yield prisma.loan.findUnique({
-            where: { id: loanId },
-        });
-        if (!lender || lender.balance.toNumber() < amount) {
-            throw new Error("Insufficient funds in wallet.");
+        if (!loan)
+            throw new Error("Loan not found.");
+        if (!lender)
+            throw new Error("Lender not found.");
+        if (lender.availableBalance.toNumber() < amount) {
+            throw new Error("Insufficient available funds in wallet.");
         }
-        // 2. Determine the exact amount to fund
+        // Only allow funding if not yet fully funded
+        if (loan.status === prisma_1.LoanStatus.FULLY_FUNDED ||
+            loan.status === prisma_1.LoanStatus.ACTIVE ||
+            loan.status === prisma_1.LoanStatus.REPAID) {
+            throw new Error("Loan is already fully funded or active.");
+        }
         const remainingAmount = loan.amountRequested.toNumber() - loan.amountFunded.toNumber();
         const fundingAmount = Math.min(amount, remainingAmount);
-        if (fundingAmount <= 0) {
-            throw new Error("Loan is already fully funded or not available for funding.");
-        }
-        // 3. Debit the lender's wallet
-        const newLenderBalance = lender.balance.toNumber() - fundingAmount;
-        yield prisma.user.update({
+        if (fundingAmount <= 0)
+            throw new Error("Loan is already fully funded.");
+        // 1. Debit the lender's AVAILABLE balance and credit their ESCROW balance
+        yield tx.user.update({
             where: { id: lenderId },
-            data: { balance: newLenderBalance },
+            data: {
+                availableBalance: { decrement: fundingAmountDecimal },
+                escrowBalance: { increment: fundingAmountDecimal },
+            },
         });
-        yield prisma.transaction.create({
+        // 2. Record the commitment transaction
+        yield tx.transaction.create({
             data: {
                 userId: lenderId,
                 loanId: loanId,
                 amount: fundingAmount,
-                type: "FUNDING_DEBIT",
-                description: "Contribution to loan funding",
+                type: prisma_1.TransactionType.FUNDING_COMMIT,
+                description: `Committed funds to loan: ${loanId}. Funds held in escrow.`,
             },
         });
-        // 4. Update the loan's funded amount
+        // 3. Update the loan's funded amount and status
         const newAmountFunded = loan.amountFunded.toNumber() + fundingAmount;
-        let newLoanStatus = loan.status;
-        // 5. Check if the loan is fully funded and update status
-        if (newAmountFunded >= loan.amountRequested.toNumber()) {
-            newLoanStatus = prisma_1.LoanStatus.FUNDED;
-            // 6. Automatically credit the borrower's wallet
-            const borrower = yield prisma.user.findUnique({
-                where: { id: loan.borrowerId },
-            });
-            if (borrower) {
-                const newBorrowerBalance = borrower.balance.toNumber() + loan.amountRequested.toNumber();
-                yield prisma.user.update({
-                    where: { id: borrower.id },
-                    data: { balance: newBorrowerBalance },
-                });
-                // Record the disbursement transaction
-                yield prisma.transaction.create({
-                    data: {
-                        userId: borrower.id,
-                        loanId: loanId,
-                        amount: loan.amountRequested.toNumber(),
-                        type: "DISBURSEMENT",
-                        description: "Loan funds disbursed to borrower",
-                    },
-                });
-            }
-        }
-        // Update loan record with new funded amount and status
-        yield prisma.loan.update({
+        let newLoanStatus = newAmountFunded >= loan.amountRequested.toNumber()
+            ? prisma_1.LoanStatus.FULLY_FUNDED
+            : prisma_1.LoanStatus.FUNDING;
+        yield tx.loan.update({
             where: { id: loanId },
             data: {
                 amountFunded: newAmountFunded,
                 status: newLoanStatus,
             },
         });
-        return { message: "Loan funded successfully." };
+        return { message: "Loan funded successfully.", status: newLoanStatus };
     }));
 });
 exports.fundLoanService = fundLoanService;
@@ -311,3 +359,243 @@ const getOpenLoansService = (page, pageSize, query, minAmount, maxAmount, sortBy
     return { loans, totalCount, totalPages };
 });
 exports.getOpenLoansService = getOpenLoansService;
+/**
+ * Get all loans created by a borrower regardless of status
+ * @param borrowerId - Borrower's user ID
+ * @returns Array of loans with details
+ */
+const getAllLoansByBorrower = (borrowerId_1, ...args_1) => __awaiter(void 0, [borrowerId_1, ...args_1], void 0, function* (borrowerId, page = 1, pageSize = 10, q, minAmount, maxAmount, status) {
+    const skip = (page - 1) * pageSize;
+    const where = { borrowerId };
+    if (q) {
+        const searchTermUpper = q.toUpperCase();
+        const orConditions = [
+            { title: { contains: q, mode: "insensitive" } },
+            { description: { contains: q, mode: "insensitive" } },
+        ];
+        // If the search term matches a valid status, also filter by status
+        const validStatuses = ["PENDING", "FUNDING", "FUNDED", "REPAID"];
+        if (validStatuses.includes(searchTermUpper)) {
+            where.status = searchTermUpper;
+        }
+        where.OR = orConditions;
+    }
+    if (minAmount) {
+        where.amountRequested = Object.assign(Object.assign({}, where.amountRequested), { gte: minAmount });
+    }
+    if (maxAmount) {
+        where.amountRequested = Object.assign(Object.assign({}, where.amountRequested), { lte: maxAmount });
+    }
+    if (status) {
+        const statusUpper = status.toUpperCase();
+        const validStatuses = ["PENDING", "FUNDING", "FUNDED", "REPAID"];
+        if (validStatuses.includes(statusUpper)) {
+            where.status = statusUpper;
+        }
+    }
+    const loans = yield prisma.loan.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: "desc" },
+    });
+    const totalCount = yield prisma.loan.count({ where });
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+    const mapped = loans.map((loan) => ({
+        id: loan.id,
+        title: loan.title,
+        description: loan.description,
+        amountRequested: convertDecimalToNumber(loan.amountRequested),
+        amountFunded: convertDecimalToNumber(loan.amountFunded),
+        interestRate: convertDecimalToNumber(loan.interestRate),
+        duration: loan.duration,
+        status: loan.status,
+        createdAt: loan.createdAt,
+        updatedAt: loan.updatedAt,
+    }));
+    return { loans: mapped, totalCount, totalPages };
+});
+exports.getAllLoansByBorrower = getAllLoansByBorrower;
+/**
+ * Manually triggered after a loan reaches FULLY_FUNDED status.
+ * 1. Clears escrow balances of all lenders (FUNDING_RELEASE).
+ * 2. Credits the borrower's available balance (DISBURSEMENT).
+ * 3. Sets the loan status to ACTIVE.
+ */
+const disburseLoanService = (loanId) => __awaiter(void 0, void 0, void 0, function* () {
+    return prisma.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
+        const loan = yield tx.loan.findUnique({ where: { id: loanId } });
+        if (!loan)
+            throw new Error("Loan not found.");
+        // Check for the correct status before disbursement
+        if (loan.status !== prisma_1.LoanStatus.FULLY_FUNDED) {
+            throw new Error(`Loan status is ${loan.status}. Only FULLY_FUNDED loans can be disbursed.`);
+        }
+        const disbursementAmount = loan.amountRequested.toNumber();
+        // 1. Find all funding commitments to calculate contribution shares
+        const fundingTransactions = yield tx.transaction.findMany({
+            where: { loanId: loanId, type: prisma_1.TransactionType.FUNDING_COMMIT },
+            select: { userId: true, amount: true },
+        });
+        // Aggregate commitments by lender ID
+        const lenderCommitments = fundingTransactions.reduce((acc, tx) => {
+            acc[tx.userId] = (acc[tx.userId] || 0) + tx.amount.toNumber();
+            return acc;
+        }, {});
+        // 2. CLEAR EACH LENDER'S ESCROW BALANCE
+        for (const [contributorId, committedAmount] of Object.entries(lenderCommitments)) {
+            const committedAmountDecimal = committedAmount;
+            // a. Debit the lender's escrowBalance (clearing the hold)
+            yield tx.user.update({
+                where: { id: contributorId },
+                data: { escrowBalance: { decrement: committedAmountDecimal } },
+            });
+            // b. Record the funding release transaction
+            yield tx.transaction.create({
+                data: {
+                    userId: contributorId,
+                    loanId: loanId,
+                    amount: committedAmount,
+                    type: prisma_1.TransactionType.FUNDING_RELEASE,
+                    description: "Funds released from escrow; investment is now active principal.",
+                },
+            });
+        }
+        // 3. Credit the borrower's available balance
+        yield tx.user.update({
+            where: { id: loan.borrowerId },
+            data: { availableBalance: { increment: disbursementAmount } },
+        });
+        // 4. Record the disbursement transaction (Borrower receiving the funds)
+        yield tx.transaction.create({
+            data: {
+                userId: loan.borrowerId,
+                loanId: loanId,
+                amount: disbursementAmount,
+                type: prisma_1.TransactionType.DISBURSEMENT,
+                description: "Loan funds disbursed to borrower",
+            },
+        });
+        // 5. Set loan status to ACTIVE
+        yield tx.loan.update({
+            where: { id: loanId },
+            data: { status: prisma_1.LoanStatus.ACTIVE },
+        });
+        return {
+            message: "Loan successfully disbursed to borrower.",
+            status: prisma_1.LoanStatus.ACTIVE,
+        };
+    }));
+});
+exports.disburseLoanService = disburseLoanService;
+// --- repayLoanService: PRO-RATA DISTRIBUTION ---
+/**
+ * Handles a borrower's repayment and distributes principal and interest pro-rata to all lenders.
+ * Repayment is only allowed when the loan status is ACTIVE.
+ */
+const repayLoanService = (loanId, borrowerId, paymentAmount) => __awaiter(void 0, void 0, void 0, function* () {
+    const paymentAmountDecimal = paymentAmount;
+    return prisma.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
+        // 1. Fetch loan and borrower data
+        const loan = yield tx.loan.findUnique({
+            where: { id: loanId },
+            select: {
+                id: true,
+                borrowerId: true,
+                status: true,
+                amountRequested: true,
+                principalRepaid: true,
+                totalInterest: true,
+                duration: true,
+            },
+        });
+        if (!loan)
+            throw new Error("Loan not found.");
+        if (loan.borrowerId !== borrowerId)
+            throw new Error("User is not the borrower for this loan.");
+        // Check for ACTIVE status
+        if (loan.status !== prisma_1.LoanStatus.ACTIVE)
+            throw new Error("Loan is not in an ACTIVE state for repayment.");
+        const borrower = yield tx.user.findUnique({
+            where: { id: borrowerId },
+            select: { availableBalance: true, escrowBalance: true },
+        });
+        if (!borrower || borrower.availableBalance.toNumber() < paymentAmount) {
+            throw new Error("Insufficient available funds to make repayment.");
+        }
+        // 2. DETERMINE INTEREST AND PRINCIPAL PORTIONS (Simplified Amortization)
+        const totalPeriods = loan.duration;
+        // NOTE: This assumes straight-line interest payment. In a real system, interest accrual must be calculated per period.
+        const interestPerPayment = loan.totalInterest.toNumber() / totalPeriods;
+        if (paymentAmount < interestPerPayment) {
+            throw new Error(`Minimum required payment (interest only) is ${interestPerPayment.toFixed(2)}.`);
+        }
+        const principalPortion = paymentAmount - interestPerPayment;
+        const interestPortion = interestPerPayment;
+        // 3. DEBIT BORROWER & UPDATE LOAN STATUS
+        yield tx.user.update({
+            where: { id: borrowerId },
+            data: { availableBalance: { decrement: paymentAmountDecimal } },
+        });
+        const newPrincipalRepaid = loan.principalRepaid.toNumber() + principalPortion;
+        let newStatus = newPrincipalRepaid >= loan.amountRequested.toNumber()
+            ? prisma_1.LoanStatus.REPAID
+            : loan.status;
+        yield tx.loan.update({
+            where: { id: loanId },
+            data: {
+                principalRepaid: newPrincipalRepaid,
+                status: newStatus,
+            },
+        });
+        // Record borrower's repayment transaction
+        yield tx.transaction.create({
+            data: {
+                userId: borrowerId,
+                loanId: loanId,
+                amount: paymentAmount,
+                type: prisma_1.TransactionType.REPAYMENT,
+                description: `Loan repayment made. Principal: ${principalPortion.toFixed(2)}, Interest: ${interestPortion.toFixed(2)}`,
+            },
+        });
+        // 4. DISTRIBUTE FUNDS TO LENDERS (PRO-RATA)
+        // Find original FUNDING_COMMIT transactions to calculate contribution shares
+        const fundingTransactions = yield tx.transaction.findMany({
+            where: { loanId: loanId, type: prisma_1.TransactionType.FUNDING_COMMIT },
+            select: { userId: true, amount: true },
+        });
+        const lenderContributions = fundingTransactions.reduce((acc, tx) => {
+            acc[tx.userId] = (acc[tx.userId] || 0) + tx.amount.toNumber();
+            return acc;
+        }, {});
+        const totalFunded = loan.amountRequested.toNumber();
+        // Distribute the repayment (Principal + Interest)
+        for (const [lenderId, fundedAmount] of Object.entries(lenderContributions)) {
+            const share = fundedAmount / totalFunded;
+            const principalShare = principalPortion * share;
+            const interestShare = interestPortion * share;
+            const creditAmount = principalShare + interestShare;
+            const creditAmountDecimal = creditAmount;
+            // Credit the lender's available balance
+            yield tx.user.update({
+                where: { id: lenderId },
+                data: { availableBalance: { increment: creditAmountDecimal } },
+            });
+            // Record distribution transaction for the lender
+            yield tx.transaction.create({
+                data: {
+                    userId: lenderId,
+                    loanId: loanId,
+                    amount: creditAmount,
+                    type: prisma_1.TransactionType.REPAYMENT,
+                    description: `Repayment received. P: ${principalShare.toFixed(2)}, I: ${interestShare.toFixed(2)}`,
+                },
+            });
+        }
+        return {
+            message: "Repayment successfully processed.",
+            newStatus: newStatus,
+        };
+    }));
+});
+exports.repayLoanService = repayLoanService;

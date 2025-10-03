@@ -4,7 +4,12 @@ interface ApiResponse<T> {
   success: boolean;
   message: string;
   data?: T;
+  // keep `error` as a human-readable string for backwards compatibility
   error?: string;
+  // structured details for programmatic clients
+  errorDetails?: any;
+  // compact JSON/string summary to aid debugging
+  errorSummary?: string;
 }
 
 // Function for a standardized success response
@@ -22,6 +27,20 @@ export const successResponse = <T>(
   return res.status(statusCode).json(response);
 };
 
+// Helper to safely stringify error details without producing '[object Object]'
+const safeErrorSummary = (err: any): string => {
+  try {
+    if (typeof err === "string") return err;
+    if (err === undefined || err === null) return "";
+    // If it's an Error instance, prefer its message
+    if (err instanceof Error && err.message) return err.message;
+    // For objects/arrays, produce a compact JSON string
+    return JSON.stringify(err);
+  } catch (_e) {
+    return String(err);
+  }
+};
+
 // Function for a standardized error response
 export const errorResponse = (
   res: Response,
@@ -29,10 +48,12 @@ export const errorResponse = (
   message: string,
   errorDetails?: any
 ) => {
-  const response: ApiResponse<null> = {
+  const summary = safeErrorSummary(errorDetails) || message;
+  const response: ApiResponse<any> = {
     success: false,
     message,
-    error: errorDetails?.toString() || message,
+    data: undefined,
+    error: errorDetails,
   };
   return res.status(statusCode).json(response);
 };

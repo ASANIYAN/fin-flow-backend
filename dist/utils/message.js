@@ -11,12 +11,35 @@ const successResponse = (res, statusCode, message, data) => {
     return res.status(statusCode).json(response);
 };
 exports.successResponse = successResponse;
+// Helper to safely stringify error details without producing '[object Object]'
+const safeErrorSummary = (err) => {
+    try {
+        if (typeof err === "string")
+            return err;
+        if (err === undefined || err === null)
+            return "";
+        // If it's an Error instance, prefer its message
+        if (err instanceof Error && err.message)
+            return err.message;
+        // For objects/arrays, produce a compact JSON string
+        return JSON.stringify(err);
+    }
+    catch (_e) {
+        return String(err);
+    }
+};
 // Function for a standardized error response
 const errorResponse = (res, statusCode, message, errorDetails) => {
+    const summary = safeErrorSummary(errorDetails) || message;
     const response = {
         success: false,
         message,
-        error: (errorDetails === null || errorDetails === void 0 ? void 0 : errorDetails.toString()) || message,
+        data: undefined,
+        // keep `error` as a human-readable string for backward compatibility
+        error: summary,
+        // preserve structured details for programmatic clients
+        errorDetails: errorDetails,
+        errorSummary: summary,
     };
     return res.status(statusCode).json(response);
 };
