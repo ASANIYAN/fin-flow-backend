@@ -1,23 +1,27 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const loanController_1 = require("../controllers/loanController");
 const authMiddleware_1 = require("../middleware/authMiddleware");
 const prisma_1 = require("../lib/prisma");
+const loanController_1 = require("../controllers/loanController");
 const router = (0, express_1.Router)();
 /**
  * @swagger
  * /api/loans/dashboard:
  *   get:
- *     summary: Get role-specific dashboard data
+ *     summary: Get dashboard data for borrower or lender
  *     tags: [Loans]
  *     security:
  *       - BearerAuth: []
- *     description: Returns dashboard data based on user role. Borrowers receive loan application statistics and active loans, while lenders receive investment summaries and new loan listings.
  *     responses:
  *       200:
  *         description: Dashboard data retrieved successfully
  *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - $ref: '#/components/schemas/BorrowerDashboard'
+ *                 - $ref: '#/components/schemas/LenderDashboard'
  *           application/json:
  *             schema:
  *               oneOf:
@@ -586,7 +590,55 @@ authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, (
  *                         loans:
  *                           type: array
  *                           items:
- *                             $ref: '#/components/schemas/Loan'
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                                 format: uuid
+ *                               title:
+ *                                 type: string
+ *                               description:
+ *                                 type: string
+ *                                 nullable: true
+ *                               amountRequested:
+ *                                 type: number
+ *                                 format: decimal
+ *                               amountFunded:
+ *                                 type: number
+ *                                 format: decimal
+ *                               interestRate:
+ *                                 type: number
+ *                                 format: decimal
+ *                               duration:
+ *                                 type: integer
+ *                               durationUnit:
+ *                                 type: string
+ *                                 example: "MONTHS"
+ *                               totalInterest:
+ *                                 type: number
+ *                                 format: decimal
+ *                               principalRepaid:
+ *                                 type: number
+ *                                 format: decimal
+ *                               status:
+ *                                 type: string
+ *                                 enum: [PENDING, FUNDING, FULLY_FUNDED, ACTIVE, REPAID]
+ *                               borrowerId:
+ *                                 type: string
+ *                                 format: uuid
+ *                               borrower:
+ *                                 type: object
+ *                                 properties:
+ *                                   firstName:
+ *                                     type: string
+ *                                   lastName:
+ *                                     type: string
+ *                               createdAt:
+ *                                 type: string
+ *                                 format: date-time
+ *                               updatedAt:
+ *                                 type: string
+ *                                 format: date-time
  *                         pagination:
  *                           type: object
  *                           properties:
@@ -594,10 +646,40 @@ authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, (
  *                               type: integer
  *                             pageSize:
  *                               type: integer
- *                             totalItems:
+ *                             totalCount:
  *                               type: integer
  *                             totalPages:
  *                               type: integer
+ *             examples:
+ *               success:
+ *                 summary: Sample open loans response
+ *                 value:
+ *                   success: true
+ *                   message: "Open loans fetched successfully."
+ *                   data:
+ *                     loans:
+ *                       - id: "123e4567-e89b-12d3-a456-426614174001"
+ *                         title: "Small Business Expansion"
+ *                         description: "Funding needed to expand our retail operations"
+ *                         amountRequested: 50000
+ *                         amountFunded: 25000
+ *                         interestRate: 12.5
+ *                         duration: 24
+ *                         durationUnit: "MONTHS"
+ *                         totalInterest: 12500
+ *                         principalRepaid: 0
+ *                         status: "PENDING"
+ *                         borrowerId: "123e4567-e89b-12d3-a456-426614174000"
+ *                         borrower:
+ *                           firstName: "John"
+ *                           lastName: "Doe"
+ *                         createdAt: "2024-01-01T00:00:00.000Z"
+ *                         updatedAt: "2024-01-01T00:00:00.000Z"
+ *                   pagination:
+ *                     page: 1
+ *                     pageSize: 10
+ *                     totalCount: 1
+ *                     totalPages: 1
  *       401:
  *         description: Authentication required
  *         content:

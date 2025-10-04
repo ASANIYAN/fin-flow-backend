@@ -35,11 +35,7 @@ const errorResponse = (res, statusCode, message, errorDetails) => {
         success: false,
         message,
         data: undefined,
-        // keep `error` as a human-readable string for backward compatibility
-        error: summary,
-        // preserve structured details for programmatic clients
-        errorDetails: errorDetails,
-        errorSummary: summary,
+        error: errorDetails,
     };
     return res.status(statusCode).json(response);
 };

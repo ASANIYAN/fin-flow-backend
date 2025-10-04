@@ -556,7 +556,13 @@ export const getOpenLoansService = async (
       amountFunded: true,
       interestRate: true,
       duration: true,
+      durationUnit: true,
+      totalInterest: true,
+      principalRepaid: true,
+      status: true,
+      borrowerId: true,
       createdAt: true,
+      updatedAt: true,
       borrower: {
         select: {
           firstName: true,
@@ -571,7 +577,26 @@ export const getOpenLoansService = async (
   const totalCount = await prisma.loan.count({ where });
   const totalPages = Math.ceil(totalCount / pageSize);
 
-  return { loans, totalCount, totalPages };
+  // Map and normalize returned loans to plain objects and convert Decimals
+  const mappedLoans = loans.map((loan: any) => ({
+    id: loan.id,
+    title: loan.title,
+    description: loan.description,
+    amountRequested: convertDecimalToNumber(loan.amountRequested),
+    amountFunded: convertDecimalToNumber(loan.amountFunded),
+    interestRate: convertDecimalToNumber(loan.interestRate),
+    duration: loan.duration,
+    durationUnit: loan.durationUnit,
+    totalInterest: convertDecimalToNumber(loan.totalInterest),
+    principalRepaid: convertDecimalToNumber(loan.principalRepaid),
+    status: loan.status,
+    borrowerId: loan.borrowerId,
+    borrower: loan.borrower,
+    createdAt: loan.createdAt,
+    updatedAt: loan.updatedAt,
+  }));
+
+  return { loans: mappedLoans, totalCount, totalPages };
 };
 
 /**
