@@ -28,14 +28,12 @@ export const verifyTransaction = async (reference: string) => {
       const lenderId = data.metadata.custom_fields[0].lender_id;
       const loanId = data.metadata.custom_fields[0].loan_id;
 
-      await fundLoanService(loanId, lenderId, amount);
-
-      console.log(`Successfully verified and funded loan ${loanId}`);
+  await fundLoanService(loanId, lenderId, amount);
     } else {
       throw new Error(`Transaction ${reference} was not successful.`);
     }
   } catch (error) {
-    console.error("Paystack verification error:", error);
+  // Paystack verification error
     throw new Error("Failed to verify transaction with Paystack.");
   }
 };
@@ -53,7 +51,7 @@ export const listBanks = async () => {
       code: bank.code,
     }));
   } catch (error) {
-    console.error("Error listing banks from Paystack:", error);
+    // Error listing banks from Paystack
     throw new Error("Failed to retrieve bank list.");
   }
 };

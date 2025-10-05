@@ -4,7 +4,7 @@ import * as fs from "fs";
 
 export default async () => {
   try {
-    console.log("Setting up test database...");
+  // Setting up test database
 
     // Set environment for testing
     process.env.NODE_ENV = "test";
@@ -34,9 +34,9 @@ export default async () => {
       }
     );
 
-    console.log("Test database setup complete");
+  // Test database setup complete
   } catch (error) {
-    console.error("Failed to set up test database:", error);
+    // Failed to set up test database
     process.exit(1);
   }
 };

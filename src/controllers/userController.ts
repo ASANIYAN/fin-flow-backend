@@ -26,7 +26,7 @@ export const getUserProfile = async (
       userProfile
     );
   } catch (error) {
-    console.error("Error fetching user profile:", error);
+    // Error fetching user profile
     return errorResponse(res, 500, "An unexpected error occurred.");
   }
 };
@@ -74,7 +74,7 @@ export const updateUserProfile = async (
       updatedProfile
     );
   } catch (error) {
-    console.error("Error updating user profile:", error);
+    // Error updating user profile
     if (error instanceof Error) {
       return errorResponse(res, 400, error.message);
     }
@@ -129,7 +129,7 @@ export const getUserTransactions = async (req: Request, res: Response) => {
       totalPages,
     });
   } catch (error) {
-    console.error("Error fetching user transactions:", error);
+    // Error fetching user transactions
     return errorResponse(res, 500, "An unexpected error occurred.");
   }
 };

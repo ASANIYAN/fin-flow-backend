@@ -11,9 +11,7 @@ try {
     PrismaClient = require("../../generated/prisma").PrismaClient;
   }
 } catch (error) {
-  console.warn(
-    "Could not load environment-specific Prisma client, falling back to main client"
-  );
+  // Could not load environment-specific Prisma client, falling back to main client
   PrismaClient = require("../../generated/prisma").PrismaClient;
 }
 

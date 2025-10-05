@@ -39,7 +39,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
 
     return errorResponse(res, 403, "Access denied. Invalid user role.");
   } catch (error) {
-    console.error(error);
+    // Unexpected error
     return errorResponse(res, 500, "An unexpected error occurred");
   }
 };
@@ -142,8 +142,7 @@ export const createLoan = async (req: Request, res: Response) => {
       newLoan
     );
   } catch (error) {
-    console.error("Error creating loan:", error);
-
+    // Error creating loan
     // Handle custom validation errors from service
     if (error && typeof error === "object" && "code" in error) {
       const customError = error as any;
@@ -155,8 +154,8 @@ export const createLoan = async (req: Request, res: Response) => {
       }
     }
 
-    // This catches genuine, unhandled server errors (e.g., database connection down)
-    return errorResponse(res, 500, "An unexpected error occurred.");
+  // This catches genuine, unhandled server errors (e.g., database connection down)
+  return errorResponse(res, 500, "An unexpected error occurred.");
   }
 };
 
@@ -184,7 +183,7 @@ export const fundLoan = async (req: Request, res: Response) => {
 
     return successResponse(res, 200, "Loan funded successfully.");
   } catch (error) {
-    console.error("Error funding loan:", error);
+    // Error funding loan
     if (error instanceof Error) {
       if (error.message === "Loan not found.") {
         return errorResponse(res, 404, error.message);
@@ -330,7 +329,7 @@ export const getOpenLoans = async (req: Request, res: Response) => {
       }
     );
   } catch (error) {
-    console.error("Error fetching open loans:", error);
+    // Error fetching open loans
     return errorResponse(res, 500, "An unexpected error occurred.");
   }
 };
@@ -402,7 +401,7 @@ export const getMyLoans = async (req: Request, res: Response) => {
       totalPages,
     });
   } catch (error) {
-    console.error("Error fetching user loans:", error);
+    // Error fetching user loans
     return errorResponse(res, 500, "An unexpected error occurred.");
   }
 };

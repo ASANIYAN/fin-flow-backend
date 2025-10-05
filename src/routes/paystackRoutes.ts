@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { getBanks, handleWebhook } from "../controllers/paystackController";
+import { authenticateToken } from "../middleware/authMiddleware";
 
 const router = Router();
 
@@ -65,46 +66,6 @@ const router = Router();
  */
 router.get("/banks", getBanks);
 
-/**
- * @swagger
- * /api/paystack/webhook:
- *   post:
- *     summary: Handle Paystack webhook events
- *     tags: [Paystack]
- *     description: Receives and processes webhook events from Paystack payment gateway
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/WebhookEvent'
- *     parameters:
- *       - in: header
- *         name: x-paystack-signature
- *         required: true
- *         schema:
- *           type: string
- *         description: Paystack webhook signature for verification
- *     responses:
- *       200:
- *         description: Webhook processed successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
- *       400:
- *         description: Invalid signature or malformed request
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
 router.post("/webhook", handleWebhook);
 
 export default router;

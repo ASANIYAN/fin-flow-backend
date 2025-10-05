@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const paystackController_1 = require("../controllers/paystackController");
+const authMiddleware_1 = require("../middleware/authMiddleware");
 const router = (0, express_1.Router)();
 /**
  * @swagger
@@ -71,6 +72,8 @@ router.get("/banks", paystackController_1.getBanks);
  *     summary: Handle Paystack webhook events
  *     tags: [Paystack]
  *     description: Receives and processes webhook events from Paystack payment gateway
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -91,6 +94,8 @@ router.get("/banks", paystackController_1.getBanks);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ApiResponse'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  *       400:
  *         description: Invalid signature or malformed request
  *         content:
@@ -104,5 +109,5 @@ router.get("/banks", paystackController_1.getBanks);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/webhook", paystackController_1.handleWebhook);
+router.post("/webhook", authMiddleware_1.authenticateToken, paystackController_1.handleWebhook);
 exports.default = router;

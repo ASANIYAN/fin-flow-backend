@@ -108,7 +108,7 @@ const handleAuthenticationError = (res: Response, error: unknown) => {
       return errorResponse(res, 403, "Token verification failed.");
 
     default:
-      console.error("Authentication Error:", error);
+      // Authentication Error
       return errorResponse(res, 500, "Authentication service unavailable.");
   }
 };
@@ -160,7 +160,7 @@ export const requireEmailVerification = async (
 
     next();
   } catch (error) {
-    console.error("Email verification check error:", error);
+    // Email verification check error
     return errorResponse(
       res,
       500,

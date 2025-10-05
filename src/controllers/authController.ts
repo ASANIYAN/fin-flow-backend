@@ -59,7 +59,7 @@ export const sendVerificationEmail = async (req: Request, res: Response) => {
 
     return successResponse(res, 200, "Verification email sent successfully");
   } catch (error) {
-    console.error(error);
+    // Unexpected error in sendVerificationEmail
     return errorResponse(res, 500, "An unexpected error occurred", error);
   }
 };
@@ -164,8 +164,8 @@ export const signup = async (req: Request, res: Response) => {
       return errorResponse(res, 409, "Email already in use");
     }
 
-    console.error(error);
-    return errorResponse(res, 500, "An unexpected error occurred", error);
+  // Unexpected error during signup
+  return errorResponse(res, 500, "An unexpected error occurred", error);
   }
 };
 
@@ -184,7 +184,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
     // Return success response for frontend to handle redirection
     return successResponse(res, 200, "Email verified successfully");
   } catch (error) {
-    console.error(error);
+    // Unexpected error during verifyEmail
     return errorResponse(res, 500, "An unexpected error occurred", error);
   }
 };
@@ -271,7 +271,7 @@ export const login = async (req: Request, res: Response) => {
       user: userData,
     });
   } catch (error) {
-    console.error(error);
+    // Unexpected error during login
     return errorResponse(res, 500, "An unexpected error occurred", error);
   }
 };
@@ -313,7 +313,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
       "If a user with that email exists, a password reset link has been sent."
     );
   } catch (error) {
-    console.error(error);
+    // Unexpected error during forgotPassword
     return errorResponse(res, 500, "An unexpected error occurred", error);
   }
 };
@@ -343,7 +343,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     return successResponse(res, 200, "Password reset successful.");
   } catch (error) {
-    console.error(error);
+    // Unexpected error during resetPassword
     return errorResponse(res, 500, "An unexpected error occurred", error);
   }
 };

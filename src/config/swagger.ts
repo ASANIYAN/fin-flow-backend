@@ -674,6 +674,12 @@ const options: Options = {
               description: "Transaction description",
               example: "Deposit via Paystack, Ref: ref_123456789",
             },
+            externalRef: {
+              type: "string",
+              nullable: true,
+              description: "External transaction reference (may be absent)",
+              example: "paystack_ref_123456",
+            },
             loanId: {
               type: "string",
               format: "uuid",
@@ -737,11 +743,4 @@ export const specs = swaggerJSDoc(options);
 
 // Safe debug logs - cast to any to avoid TS errors and guard presence of paths
 const _specsAny = specs as any;
-console.log(
-  "Swagger specs generated. Paths count:",
-  _specsAny.paths ? Object.keys(_specsAny.paths).length : 0
-);
-console.log(
-  "Paths found:",
-  _specsAny.paths ? Object.keys(_specsAny.paths) : "No paths"
-);
+// Swagger specs generated. Paths info available in _specsAny if needed.

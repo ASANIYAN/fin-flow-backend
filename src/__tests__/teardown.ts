@@ -7,11 +7,10 @@ export default async () => {
     // Remove the test database file
     const testDbPath = path.join(__dirname, "../../test.db");
     if (fs.existsSync(testDbPath)) {
-      fs.unlinkSync(testDbPath);
-      console.log("Test database cleaned up successfully");
+  fs.unlinkSync(testDbPath);
+  // Test database cleaned up successfully
     }
   } catch (error) {
-    console.warn("Warning: Could not clean up test database");
-    console.error(error);
+    // Could not clean up test database
   }
 };
