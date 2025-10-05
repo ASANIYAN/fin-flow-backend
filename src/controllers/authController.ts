@@ -164,8 +164,8 @@ export const signup = async (req: Request, res: Response) => {
       return errorResponse(res, 409, "Email already in use");
     }
 
-  // Unexpected error during signup
-  return errorResponse(res, 500, "An unexpected error occurred", error);
+    // Unexpected error during signup
+    return errorResponse(res, 500, "An unexpected error occurred", error);
   }
 };
 

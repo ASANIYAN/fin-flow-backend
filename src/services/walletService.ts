@@ -30,7 +30,7 @@ export const processVerifiedDeposit = async (
 
     if (existingTransaction) {
       // If processed, treat as success but prevent double-crediting (idempotency)
-  // Idempotency: transaction already processed
+      // Idempotency: transaction already processed
       return;
     }
 
@@ -87,7 +87,7 @@ export const confirmDepositAttemptService = async (
         }
       );
 
-  // Paystack response received
+      // Paystack response received
 
       const data = response.data.data;
 
@@ -105,7 +105,7 @@ export const confirmDepositAttemptService = async (
       }
 
       // If verification is successful, return success
-  // Client-side confirmation verified for reference
+      // Client-side confirmation verified for reference
 
       return {
         success: true,
@@ -120,7 +120,7 @@ export const confirmDepositAttemptService = async (
         // Only retry if it's the specific "Transaction reference not found" error
         currentRetry++;
         const delay = Math.pow(2, currentRetry) * 500; // Exponential backoff: 1s, 2s, 4s...
-  // Paystack reference not found; will retry
+        // Paystack reference not found; will retry
 
         if (currentRetry < MAX_RETRIES) {
           await sleep(delay);
@@ -129,7 +129,7 @@ export const confirmDepositAttemptService = async (
       }
 
       // If we run out of retries, or if it's a different error, throw the original error
-  // Final error confirming deposit
+      // Final error confirming deposit
       throw error;
     }
   }

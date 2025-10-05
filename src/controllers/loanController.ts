@@ -154,8 +154,8 @@ export const createLoan = async (req: Request, res: Response) => {
       }
     }
 
-  // This catches genuine, unhandled server errors (e.g., database connection down)
-  return errorResponse(res, 500, "An unexpected error occurred.");
+    // This catches genuine, unhandled server errors (e.g., database connection down)
+    return errorResponse(res, 500, "An unexpected error occurred.");
   }
 };
 

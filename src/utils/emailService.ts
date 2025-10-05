@@ -27,9 +27,9 @@ export const sendEmail = async (mailOptions: MailOptions): Promise<void> => {
         apiKey: process.env.SENDGRID_API_KEY as string,
       })
     );
-  await sendgridTransporter.sendMail(emailData);
+    await sendgridTransporter.sendMail(emailData);
   } catch (sendgridError) {
-  // SendGrid failed, falling back to Gmail
+    // SendGrid failed, falling back to Gmail
 
     try {
       // Fallback Email Service (Nodemailer/Gmail)
@@ -40,7 +40,7 @@ export const sendEmail = async (mailOptions: MailOptions): Promise<void> => {
           pass: process.env.EMAIL_PASS,
         },
       });
-  await fallbackTransporter.sendMail(emailData);
+      await fallbackTransporter.sendMail(emailData);
     } catch (fallbackError) {
       // Both email services failed
       throw new Error("Failed to send email through all available services");
