@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { getBanks, handleWebhook } from "../controllers/paystackController";
+import {
+  getBanks,
+  handleWebhook,
+  resolveAccountName,
+} from "../controllers/paystackController";
 import { authenticateToken } from "../middleware/authMiddleware";
 
 const router = Router();
@@ -67,5 +71,65 @@ const router = Router();
 router.get("/banks", getBanks);
 
 router.post("/webhook", handleWebhook);
+
+/**
+ * @swagger
+ * /api/paystack/resolve-account:
+ *   post:
+ *     summary: Resolve bank account name
+ *     tags: [Paystack]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - accountNumber
+ *               - bankCode
+ *             properties:
+ *               accountNumber:
+ *                 type: string
+ *                 example: "0123456789"
+ *               bankCode:
+ *                 type: string
+ *                 example: "044"
+ *     responses:
+ *       200:
+ *         description: Account resolved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         account_number:
+ *                           type: string
+ *                         account_name:
+ *                           type: string
+ *                         bank_id:
+ *                           type: number
+ *             examples:
+ *               success:
+ *                 summary: Sample resolution
+ *                 value:
+ *                   success: true
+ *                   message: "Account resolved successfully."
+ *                   data:
+ *                     account_number: "0123456789"
+ *                     account_name: "John Doe"
+ *                     bank_id: 44
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
+ */
+router.post("/resolve-account", authenticateToken, resolveAccountName);
 
 export default router;

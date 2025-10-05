@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import crypto from "crypto";
-import { listBanks, verifyTransaction } from "../services/paystackService";
+import {
+  listBanks,
+  verifyTransaction,
+  resolveAccountNameService,
+} from "../services/paystackService";
 import { errorResponse, successResponse } from "../utils/message";
 import { processVerifiedDeposit } from "../services/walletService";
 import { AuthenticatedRequest } from "../types/auth";
@@ -98,5 +102,34 @@ export const getBanks = async (req: Request, res: Response) => {
   } catch (error) {
     // Error fetching banks
     return errorResponse(res, 500, "Unable to fetch bank list.");
+  }
+};
+
+export const resolveAccountName = async (req: Request, res: Response) => {
+  const { accountNumber, bankCode } = req.body as {
+    accountNumber?: string;
+    bankCode?: string;
+  };
+
+  if (!accountNumber || !bankCode) {
+    return errorResponse(
+      res,
+      400,
+      "Both accountNumber and bankCode are required."
+    );
+  }
+
+  try {
+    const resolution = await resolveAccountNameService(accountNumber, bankCode);
+
+    return successResponse(res, 200, "Account resolved successfully.", {
+      account_number: resolution.account_number,
+      account_name: resolution.account_name,
+      bank_id: resolution.bank_id,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "An unexpected error occurred.";
+    return errorResponse(res, 500, message);
   }
 };
