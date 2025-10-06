@@ -158,8 +158,8 @@ export const getUserProfileService = async (userId: string) => {
 
   return {
     ...user,
-    availableBalance: parseFloat(user.availableBalance.toString()),
-    escrowBalance: parseFloat(user.escrowBalance.toString()),
+    availableBalance: parseFloat((user?.availableBalance ?? "0").toString()),
+    escrowBalance: parseFloat((user?.escrowBalance ?? "0").toString()),
   };
 };
 
