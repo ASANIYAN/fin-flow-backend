@@ -4,9 +4,11 @@
   "description": "Peer-to-Peer Lending API Backend",
   "main": "index.js",
   "scripts": {
-    "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "npx prisma generate && tsc",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
     "deploy": "npx prisma migrate deploy",
     "test": "NODE_ENV=test jest --runInBand",
     "test:db:push": "NODE_ENV=test DATABASE_URL=file:./test.db npx prisma db push",
