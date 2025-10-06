@@ -1,16 +1,14 @@
 {
   "name": "fin-flow-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Peer-to-Peer Lending API Backend",
   "main": "index.js",
   "scripts": {
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
+    "postinstall": "npx prisma generate",
     "test": "NODE_ENV=test jest --runInBand",
-    "generate": "npx prisma generate",
-    "migrate:deploy": "npx prisma migrate deploy",
-    "prebuild": "npm install @prisma/client prisma --force && npm run generate",
     "test:db:push": "NODE_ENV=test DATABASE_URL=file:./test.db npx prisma db push",
     "test:schema": "NODE_ENV=test jest --testPathPatterns=schema-validation.test.ts",
     "validate:schema": "./scripts/validate-schema.sh"
@@ -20,6 +18,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@types/node": "^24.7.0",
     "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
@@ -39,7 +38,6 @@
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^24.5.0",
     "@types/nodemailer": "^7.0.1",
     "@types/nodemailer-sendgrid": "^1.0.3",
     "@types/supertest": "^6.0.3",
