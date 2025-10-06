@@ -6,8 +6,7 @@
   "scripts": {
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc && npx prisma generate",
-    "postinstall": "npx prisma generate",
+    "build": "npx prisma generate && npx prisma db push --accept-data-loss && tsc",
     "test": "NODE_ENV=test jest --runInBand",
     "test:db:push": "NODE_ENV=test DATABASE_URL=file:./test.db npx prisma db push",
     "test:schema": "NODE_ENV=test jest --testPathPatterns=schema-validation.test.ts",
