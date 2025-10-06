@@ -85,7 +85,7 @@ export const resolveAccountNameService = async (
     const response = await axios.get(url, {
       params: {
         account_number: accountNumber,
-        bank_code: bankCode,
+        bank_code: "001",
       },
       headers: {
         // CRITICAL: Must use the Secret Key for this operation

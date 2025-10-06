@@ -130,6 +130,6 @@ router.post("/webhook", handleWebhook);
  *       500:
  *         $ref: '#/components/responses/InternalError'
  */
-router.post("/resolve-account", authenticateToken, resolveAccountName);
+router.post("/resolve-account", resolveAccountName);
 
 export default router;

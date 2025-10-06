@@ -16,4 +16,4 @@ try {
 }
 
 export { PrismaClient };
-export * from "../../generated/prisma"; // Export other types from main client
+export * from "../../generated/prisma";

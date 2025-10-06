@@ -107,8 +107,8 @@ export const getBanks = async (req: Request, res: Response) => {
 
 export const resolveAccountName = async (req: Request, res: Response) => {
   const { accountNumber, bankCode } = req.body as {
-    accountNumber?: string;
-    bankCode?: string;
+    accountNumber: string;
+    bankCode: string;
   };
 
   if (!accountNumber || !bankCode) {
