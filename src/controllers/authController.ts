@@ -1,8 +1,6 @@
 import jwt from "jsonwebtoken";
 import { Request, Response } from "express";
 
-import { Role } from "../../generated/prisma";
-
 // Import Prisma for error handling - use the main client types since they're the same
 const Prisma =
   process.env.NODE_ENV === "test"
@@ -20,6 +18,7 @@ import {
   verifyUser,
 } from "../services/userService";
 import { validateAndRespond, ValidationSchema } from "../utils/validation";
+import { Role } from "@prisma/client";
 
 interface SignupRequestBody {
   role: Role;

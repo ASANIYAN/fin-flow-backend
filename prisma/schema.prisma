@@ -32,6 +32,11 @@ model User {
   availableBalance Decimal     @default(0) @db.Decimal(10, 2) // Funds ready for use/withdrawal
   escrowBalance    Decimal     @default(0) @db.Decimal(10, 2) // Funds committed to PENDING/FUNDING loans
 
+    // Security Fields
+  // It is optional (`?`) because it is null when not in use.
+  resetPasswordToken    String?       @unique
+  resetPasswordExpires  DateTime?
+
   loanApplications Loan[]
   fundedLoans      Loan[]      @relation("FundedLoans")
   transactions     Transaction[]

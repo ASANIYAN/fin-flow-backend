@@ -4,7 +4,6 @@ import {
   requireEmailVerification,
   requireRole,
 } from "../middleware/authMiddleware";
-import { Role } from "../lib/prisma";
 import {
   getDashboardData,
   createLoan,
@@ -12,6 +11,7 @@ import {
   fundLoan,
   getOpenLoans,
 } from "../controllers/loanController";
+import { Role } from "@prisma/client";
 
 const router = Router();
 

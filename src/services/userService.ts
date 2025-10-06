@@ -1,7 +1,6 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import { PrismaClient } from "@prisma/client";
-import { Role } from "../../generated/prisma";
+import { PrismaClient, Role } from "@prisma/client";
 
 const prisma = new PrismaClient();
 const saltRounds = 10;
