@@ -10,6 +10,7 @@
     "test": "NODE_ENV=test jest --runInBand",
     "generate": "npx prisma generate",
     "migrate:deploy": "npx prisma migrate deploy",
+    "prebuild": "npm install @prisma/client prisma --force && npm run generate",
     "test:db:push": "NODE_ENV=test DATABASE_URL=file:./test.db npx prisma db push",
     "test:schema": "NODE_ENV=test jest --testPathPatterns=schema-validation.test.ts",
     "validate:schema": "./scripts/validate-schema.sh"
