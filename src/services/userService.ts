@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import { PrismaClient } from "../lib/prisma";
+import { PrismaClient } from "@prisma/client";
 import { Role } from "../../generated/prisma";
 
 const prisma = new PrismaClient();
