@@ -1,10 +1,10 @@
 import {
+  PrismaClient,
   Prisma,
   LoanStatus,
   TransactionType,
   DurationUnit,
-} from "../lib/prisma";
-import { PrismaClient } from "@prisma/client";
+} from "@prisma/client";
 
 // Utility function to convert duration to days for consistent calculations
 const convertDurationToDays = (duration: number, unit: string): number => {

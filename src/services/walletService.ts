@@ -1,6 +1,5 @@
 import axios from "axios";
-import { Prisma, TransactionType } from "../lib/prisma";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient, TransactionType } from "@prisma/client";
 import { findUserById } from "./userService";
 import { sleep } from "../utils/utils";
 

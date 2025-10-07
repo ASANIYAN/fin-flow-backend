@@ -4,8 +4,8 @@ process.env.TEST_DATABASE_URL = "file:./test.db";
 import app from "../server";
 import request from "supertest";
 import { prisma } from "../services/userService";
-import { TransactionType } from "../lib/prisma";
 import jwt from "jsonwebtoken";
+import { TransactionType } from "@prisma/client";
 
 const JWT_SECRET = process.env.JWT_SECRET || "test-secret";
 
