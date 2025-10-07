@@ -9,7 +9,7 @@ const server_1 = __importDefault(require("../server"));
 const supertest_1 = __importDefault(require("supertest"));
 const userService_1 = require("../services/userService");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const client_1 = require("@prisma/client");
+const client_1 = require("../../node_modules/.prisma/client");
 const JWT_SECRET = process.env.JWT_SECRET || "test-secret";
 describe("User Endpoints", () => {
     let userToken;

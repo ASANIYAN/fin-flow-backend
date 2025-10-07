@@ -1,6 +1,6 @@
 // Authentication-related types and interfaces
 
-import { Role } from "@prisma/client";
+import { Role } from "../../node_modules/.prisma/client";
 import { Request } from "express";
 
 // JWT payload interface for better type safety

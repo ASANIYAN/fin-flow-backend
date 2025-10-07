@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.repayLoanService = exports.disburseLoanService = exports.getAllLoansByBorrower = exports.getOpenLoansService = exports.fundLoanService = exports.getLenderDashboardData = exports.getBorrowerDashboardData = exports.createLoanService = void 0;
-const client_1 = require("@prisma/client");
+const client_1 = require("../../node_modules/.prisma/client");
+const client_2 = require("@prisma/client");
 // Utility function to convert duration to days for consistent calculations
 const convertDurationToDays = (duration, unit) => {
     switch (unit) {
@@ -57,7 +58,7 @@ const calculateTotalInterest = (amountRequested, interestRate, duration, duratio
 };
 const DEFAULT_EARNINGS_RATE = 0.05; // 5% simplified earnings calculation
 const MAX_NEW_LISTINGS = 10;
-const prisma = new client_1.PrismaClient();
+const prisma = new client_2.PrismaClient();
 const calculateProgress = (amountFunded, amountRequested) => {
     if (amountRequested === 0)
         return 0;

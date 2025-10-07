@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.withdrawFundsService = exports.confirmDepositAttemptService = exports.processVerifiedDeposit = void 0;
 const axios_1 = __importDefault(require("axios"));
 const client_1 = require("@prisma/client");
+const client_2 = require("../../node_modules/.prisma/client");
 const userService_1 = require("./userService");
 const utils_1 = require("../utils/utils");
 const prisma = new client_1.PrismaClient();
@@ -162,7 +163,7 @@ const withdrawFundsService = async (userId, amount, accountNumber, bankCode) => 
             data: {
                 userId: userId,
                 amount: amount,
-                type: client_1.TransactionType.WITHDRAWAL,
+                type: client_2.TransactionType.WITHDRAWAL,
                 description: `Withdrawal, Ref: ${transferReference}`,
             },
         });

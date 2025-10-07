@@ -40,7 +40,7 @@ exports.requireRole = exports.requireEmailVerification = exports.authenticateTok
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const message_1 = require("../utils/message");
 const auth_1 = require("../types/auth");
-const client_1 = require("@prisma/client");
+const client_1 = require("../../node_modules/.prisma/client");
 // Configuration validation - fail fast if JWT_SECRET is not defined
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {

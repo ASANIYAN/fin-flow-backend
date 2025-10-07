@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const walletController_1 = require("../controllers/walletController");
 const authMiddleware_1 = require("../middleware/authMiddleware");
-const client_1 = require("@prisma/client");
+const client_1 = require("../../node_modules/.prisma/client");
 const router = (0, express_1.Router)();
 /**
  * @swagger

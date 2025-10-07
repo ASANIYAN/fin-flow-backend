@@ -1,5 +1,6 @@
 import axios from "axios";
-import { Prisma, PrismaClient, TransactionType } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
+import { TransactionType } from "../../node_modules/.prisma/client";
 import { findUserById } from "./userService";
 import { sleep } from "../utils/utils";
 

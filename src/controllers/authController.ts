@@ -16,7 +16,8 @@ import {
 } from "../services/userService";
 import { validateAndRespond, ValidationSchema } from "../utils/validation";
 
-import { Role, Prisma } from "@prisma/client";
+import { Role } from "../../node_modules/.prisma/client";
+import { Prisma } from "@prisma/client";
 
 interface SignupRequestBody {
   role: Role;

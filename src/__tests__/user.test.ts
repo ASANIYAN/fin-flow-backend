@@ -5,7 +5,7 @@ import app from "../server";
 import request from "supertest";
 import { prisma } from "../services/userService";
 import jwt from "jsonwebtoken";
-import { TransactionType } from "@prisma/client";
+import { TransactionType } from "../../node_modules/.prisma/client";
 
 const JWT_SECRET = process.env.JWT_SECRET || "test-secret";
 
