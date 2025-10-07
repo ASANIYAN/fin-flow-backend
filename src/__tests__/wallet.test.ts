@@ -148,7 +148,10 @@ describe("Wallet Endpoints", () => {
 
       expect(res.statusCode).toEqual(200);
       expect(res.body).toHaveProperty("success", true);
-      expect(res.body).toHaveProperty("message", "Payment confirmed. Balance update will follow shortly via webhook.");
+      expect(res.body).toHaveProperty(
+        "message",
+        "Payment confirmed. Balance update will follow shortly via webhook."
+      );
     });
 
     it("should validate required fields", async () => {
@@ -226,7 +229,11 @@ describe("Wallet Endpoints", () => {
 
       // Simulate webhook processing for the first transaction
       const { processVerifiedDeposit } = require("../services/walletService");
-      await processVerifiedDeposit(userId, validDepositData.amount, validDepositData.reference);
+      await processVerifiedDeposit(
+        userId,
+        validDepositData.amount,
+        validDepositData.reference
+      );
 
       // Try to use same reference again
       const res = await request(app)
