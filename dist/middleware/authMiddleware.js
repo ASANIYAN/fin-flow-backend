@@ -32,15 +32,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -137,16 +128,16 @@ const handleAuthenticationError = (res, error) => {
     }
 };
 // Middleware to check if user's email is verified
-const requireEmailVerification = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+const requireEmailVerification = async (req, res, next) => {
     const authenticatedReq = req;
     if (!authenticatedReq.user) {
         return (0, message_1.errorResponse)(res, 401, "Authentication required");
     }
     try {
         // Import here to avoid circular dependencies
-        const { findUserById } = yield Promise.resolve().then(() => __importStar(require("../services/userService")));
+        const { findUserById } = await Promise.resolve().then(() => __importStar(require("../services/userService")));
         // Fetch fresh user data from database to check email verification status
-        const user = yield findUserById(authenticatedReq.user.id);
+        const user = await findUserById(authenticatedReq.user.id);
         if (!user) {
             return (0, message_1.errorResponse)(res, 401, "User account not found. Please contact support.");
         }
@@ -157,14 +148,17 @@ const requireEmailVerification = (req, res, next) => __awaiter(void 0, void 0, v
             });
         }
         // Update the request user object with fresh verification status
-        authenticatedReq.user = Object.assign(Object.assign({}, authenticatedReq.user), { email: user.email });
+        authenticatedReq.user = {
+            ...authenticatedReq.user,
+            email: user.email, // Ensure we have the latest email
+        };
         next();
     }
     catch (error) {
         // Email verification check error
         return (0, message_1.errorResponse)(res, 500, "Unable to verify email status. Please try again later.");
     }
-});
+};
 exports.requireEmailVerification = requireEmailVerification;
 const requireRole = (...allowedRoles) => {
     return (req, res, next) => {

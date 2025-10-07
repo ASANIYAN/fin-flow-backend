@@ -1,14 +1,5 @@
 "use strict";
 // src/services/paystackService.ts
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -21,9 +12,9 @@ const PAYSTACK_API_BASE_URL = "https://api.paystack.co";
 if (!PAYSTACK_SECRET_KEY) {
     throw new Error("PAYSTACK_SECRET_KEY environment variable is required.");
 }
-const verifyTransaction = (reference) => __awaiter(void 0, void 0, void 0, function* () {
+const verifyTransaction = async (reference) => {
     try {
-        const response = yield axios_1.default.get(`${PAYSTACK_API_BASE_URL}/transaction/verify/${reference}`, {
+        const response = await axios_1.default.get(`${PAYSTACK_API_BASE_URL}/transaction/verify/${reference}`, {
             headers: {
                 Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
             },
@@ -34,7 +25,7 @@ const verifyTransaction = (reference) => __awaiter(void 0, void 0, void 0, funct
             const amount = data.amount / 100; // Paystack returns amount in kobo/cents
             const lenderId = data.metadata.custom_fields[0].lender_id;
             const loanId = data.metadata.custom_fields[0].loan_id;
-            yield (0, loanService_1.fundLoanService)(loanId, lenderId, amount);
+            await (0, loanService_1.fundLoanService)(loanId, lenderId, amount);
         }
         else {
             throw new Error(`Transaction ${reference} was not successful.`);
@@ -44,11 +35,11 @@ const verifyTransaction = (reference) => __awaiter(void 0, void 0, void 0, funct
         // Paystack verification error
         throw new Error("Failed to verify transaction with Paystack.");
     }
-});
+};
 exports.verifyTransaction = verifyTransaction;
-const listBanks = () => __awaiter(void 0, void 0, void 0, function* () {
+const listBanks = async () => {
     try {
-        const response = yield axios_1.default.get(`${PAYSTACK_API_BASE_URL}/bank`, {
+        const response = await axios_1.default.get(`${PAYSTACK_API_BASE_URL}/bank`, {
             headers: {
                 Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
             },
@@ -63,7 +54,7 @@ const listBanks = () => __awaiter(void 0, void 0, void 0, function* () {
         // Error listing banks from Paystack
         throw new Error("Failed to retrieve bank list.");
     }
-});
+};
 exports.listBanks = listBanks;
 /**
  * Resolves a bank account number and bank code to retrieve the account holder's name.
@@ -71,15 +62,14 @@ exports.listBanks = listBanks;
  * @param bankCode The unique code for the bank (e.g., 044 for Access Bank).
  * @returns An object containing the account name and number.
  */
-const resolveAccountNameService = (accountNumber, bankCode) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
+const resolveAccountNameService = async (accountNumber, bankCode) => {
     if (!PAYSTACK_SECRET_KEY) {
         throw new Error("Paystack Secret Key is not configured.");
     }
     try {
         // 1. Construct the URL with query parameters
         const url = `${PAYSTACK_API_BASE_URL}/bank/resolve`;
-        const response = yield axios_1.default.get(url, {
+        const response = await axios_1.default.get(url, {
             params: {
                 account_number: accountNumber,
                 bank_code: "001",
@@ -104,10 +94,10 @@ const resolveAccountNameService = (accountNumber, bankCode) => __awaiter(void 0,
     catch (error) {
         // Paystack Account Resolution Error
         // Handle specific Paystack errors (e.g., invalid account number)
-        if (axios_1.default.isAxiosError(error) && ((_b = (_a = error.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.message)) {
+        if (axios_1.default.isAxiosError(error) && error.response?.data?.message) {
             throw new Error(`Resolution failed: ${error.response.data.message}`);
         }
         throw new Error("An unexpected error occurred during account resolution.");
     }
-});
+};
 exports.resolveAccountNameService = resolveAccountNameService;

@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -25,13 +16,13 @@ describe("Loan Endpoints", () => {
     let borrowerId;
     let lenderId;
     let loanId;
-    beforeEach(() => __awaiter(void 0, void 0, void 0, function* () {
+    beforeEach(async () => {
         // Clean up test data before each test (order matters for foreign keys)
-        yield userService_1.prisma.transaction.deleteMany({});
-        yield userService_1.prisma.loan.deleteMany({});
-        yield userService_1.prisma.user.deleteMany({});
+        await userService_1.prisma.transaction.deleteMany({});
+        await userService_1.prisma.loan.deleteMany({});
+        await userService_1.prisma.user.deleteMany({});
         // Create test users
-        const borrower = yield userService_1.prisma.user.create({
+        const borrower = await userService_1.prisma.user.create({
             data: {
                 id: "test-borrower-id",
                 email: "borrower@test.com",
@@ -45,7 +36,7 @@ describe("Loan Endpoints", () => {
                 escrowBalance: 0,
             },
         });
-        const lender = yield userService_1.prisma.user.create({
+        const lender = await userService_1.prisma.user.create({
             data: {
                 id: "test-lender-id",
                 email: "lender@test.com",
@@ -65,7 +56,7 @@ describe("Loan Endpoints", () => {
         borrowerToken = jsonwebtoken_1.default.sign({ userId: borrower.id, role: borrower.role }, JWT_SECRET);
         lenderToken = jsonwebtoken_1.default.sign({ userId: lender.id, role: lender.role }, JWT_SECRET);
         // Create a test loan
-        const loan = yield userService_1.prisma.loan.create({
+        const loan = await userService_1.prisma.loan.create({
             data: {
                 title: "Test Loan",
                 description: "A loan for testing",
@@ -80,11 +71,11 @@ describe("Loan Endpoints", () => {
         });
         loanId = loan.id;
         // Wait a bit to ensure setup is complete
-        yield new Promise((resolve) => setTimeout(resolve, 100));
-    }));
+        await new Promise((resolve) => setTimeout(resolve, 100));
+    });
     describe("GET /api/loans/dashboard", () => {
-        it("should return borrower dashboard data", () => __awaiter(void 0, void 0, void 0, function* () {
-            const res = yield (0, supertest_1.default)(server_1.default)
+        it("should return borrower dashboard data", async () => {
+            const res = await (0, supertest_1.default)(server_1.default)
                 .get("/api/loans/dashboard")
                 .set("Authorization", `Bearer ${borrowerToken}`);
             expect(res.statusCode).toEqual(200);
@@ -93,9 +84,9 @@ describe("Loan Endpoints", () => {
             expect(res.body.data).toHaveProperty("pendingApplications");
             expect(res.body.data).toHaveProperty("activeLoans");
             expect(Array.isArray(res.body.data.activeLoans)).toBe(true);
-        }));
-        it("should return lender dashboard data", () => __awaiter(void 0, void 0, void 0, function* () {
-            const res = yield (0, supertest_1.default)(server_1.default)
+        });
+        it("should return lender dashboard data", async () => {
+            const res = await (0, supertest_1.default)(server_1.default)
                 .get("/api/loans/dashboard")
                 .set("Authorization", `Bearer ${lenderToken}`);
             expect(res.statusCode).toEqual(200);
@@ -106,15 +97,15 @@ describe("Loan Endpoints", () => {
             expect(res.body.data.investmentSummary).toHaveProperty("totalEarnings");
             expect(res.body.data.investmentSummary).toHaveProperty("activeInvestments");
             expect(Array.isArray(res.body.data.newListings)).toBe(true);
-        }));
-        it("should require authentication", () => __awaiter(void 0, void 0, void 0, function* () {
-            const res = yield (0, supertest_1.default)(server_1.default).get("/api/loans/dashboard");
+        });
+        it("should require authentication", async () => {
+            const res = await (0, supertest_1.default)(server_1.default).get("/api/loans/dashboard");
             expect(res.statusCode).toEqual(401);
             expect(res.body).toHaveProperty("success", false);
-        }));
+        });
     });
     describe("POST /api/loans/create-loan", () => {
-        it("should create loan successfully for borrower", () => __awaiter(void 0, void 0, void 0, function* () {
+        it("should create loan successfully for borrower", async () => {
             const loanData = {
                 title: "Business Loan",
                 description: "Loan for business expansion",
@@ -123,15 +114,15 @@ describe("Loan Endpoints", () => {
                 duration: 18,
                 durationUnit: "MONTHS",
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/loans/create-loan")
                 .set("Authorization", `Bearer ${borrowerToken}`)
                 .send(loanData);
             expect(res.statusCode).toEqual(201);
             expect(res.body).toHaveProperty("success", true);
             expect(res.body.data).toHaveProperty("id");
-        }));
-        it("should reject loan creation for lender", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should reject loan creation for lender", async () => {
             const loanData = {
                 title: "Business Loan",
                 description: "Loan for business expansion",
@@ -140,26 +131,26 @@ describe("Loan Endpoints", () => {
                 duration: 18,
                 durationUnit: "MONTHS",
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/loans/create-loan")
                 .set("Authorization", `Bearer ${lenderToken}`)
                 .send(loanData);
             expect(res.statusCode).toEqual(403);
             expect(res.body).toHaveProperty("success", false);
-        }));
-        it("should validate required fields", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should validate required fields", async () => {
             const invalidData = {
                 title: "",
                 description: "Loan for business expansion",
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/loans/create-loan")
                 .set("Authorization", `Bearer ${borrowerToken}`)
                 .send(invalidData);
             expect(res.statusCode).toEqual(400);
             expect(res.body).toHaveProperty("success", false);
-        }));
-        it("should require authentication", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should require authentication", async () => {
             const loanData = {
                 title: "Business Loan",
                 description: "Loan for business expansion",
@@ -168,71 +159,71 @@ describe("Loan Endpoints", () => {
                 duration: 18,
                 durationUnit: "MONTHS",
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/loans/create-loan")
                 .send(loanData);
             expect(res.statusCode).toEqual(401);
             expect(res.body).toHaveProperty("success", false);
-        }));
+        });
     });
     describe("POST /api/loans/:id/fund", () => {
-        beforeEach(() => __awaiter(void 0, void 0, void 0, function* () {
+        beforeEach(async () => {
             // Ensure lender has sufficient balance
-            yield userService_1.prisma.user.update({
+            await userService_1.prisma.user.update({
                 where: { id: lenderId },
                 data: { availableBalance: 50000 },
             });
-        }));
-        it("should fund loan successfully", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should fund loan successfully", async () => {
             const fundingData = {
                 amount: 5000,
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post(`/api/loans/${loanId}/fund`)
                 .set("Authorization", `Bearer ${lenderToken}`)
                 .send(fundingData);
             expect(res.statusCode).toEqual(200);
             expect(res.body).toHaveProperty("success", true);
-        }));
-        it("should reject funding for borrower", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should reject funding for borrower", async () => {
             const fundingData = {
                 amount: 5000,
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post(`/api/loans/${loanId}/fund`)
                 .set("Authorization", `Bearer ${borrowerToken}`)
                 .send(fundingData);
             expect(res.statusCode).toEqual(403);
             expect(res.body).toHaveProperty("success", false);
-        }));
-        it("should validate funding amount", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should validate funding amount", async () => {
             const invalidData = {
                 amount: -100, // Negative amount
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post(`/api/loans/${loanId}/fund`)
                 .set("Authorization", `Bearer ${lenderToken}`)
                 .send(invalidData);
             expect(res.statusCode).toEqual(400);
             expect(res.body).toHaveProperty("success", false);
-        }));
-        it("should handle non-existent loan", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should handle non-existent loan", async () => {
             const nonExistentId = "123e4567-e89b-12d3-a456-426614174999";
             const fundingData = {
                 amount: 5000,
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post(`/api/loans/${nonExistentId}/fund`)
                 .set("Authorization", `Bearer ${lenderToken}`)
                 .send(fundingData);
             expect(res.statusCode).toEqual(404);
             expect(res.body).toHaveProperty("success", false);
-        }));
+        });
     });
     describe("GET /api/loans/open", () => {
-        beforeEach(() => __awaiter(void 0, void 0, void 0, function* () {
+        beforeEach(async () => {
             // Create some test loans
-            yield userService_1.prisma.loan.createMany({
+            await userService_1.prisma.loan.createMany({
                 data: [
                     {
                         title: "Loan 1",
@@ -258,9 +249,9 @@ describe("Loan Endpoints", () => {
                     },
                 ],
             });
-        }));
-        it("should return list of open loans", () => __awaiter(void 0, void 0, void 0, function* () {
-            const res = yield (0, supertest_1.default)(server_1.default)
+        });
+        it("should return list of open loans", async () => {
+            const res = await (0, supertest_1.default)(server_1.default)
                 .get("/api/loans/open")
                 .set("Authorization", `Bearer ${lenderToken}`);
             expect(res.statusCode).toEqual(200);
@@ -268,21 +259,21 @@ describe("Loan Endpoints", () => {
             expect(res.body.data).toHaveProperty("loans");
             expect(Array.isArray(res.body.data.loans)).toBe(true);
             expect(res.body.data.loans.length).toBeGreaterThan(0);
-        }));
-        it("should filter loans by status", () => __awaiter(void 0, void 0, void 0, function* () {
-            const res = yield (0, supertest_1.default)(server_1.default)
+        });
+        it("should filter loans by status", async () => {
+            const res = await (0, supertest_1.default)(server_1.default)
                 .get("/api/loans/open?status=PENDING")
                 .set("Authorization", `Bearer ${lenderToken}`);
             expect(res.statusCode).toEqual(200);
             expect(res.body).toHaveProperty("success", true);
-        }));
-        it("should require authentication", () => __awaiter(void 0, void 0, void 0, function* () {
-            const res = yield (0, supertest_1.default)(server_1.default).get("/api/loans/open");
+        });
+        it("should require authentication", async () => {
+            const res = await (0, supertest_1.default)(server_1.default).get("/api/loans/open");
             expect(res.statusCode).toEqual(401);
             expect(res.body).toHaveProperty("success", false);
-        }));
+        });
     });
-    afterAll(() => __awaiter(void 0, void 0, void 0, function* () {
-        yield userService_1.prisma.$disconnect();
-    }));
+    afterAll(async () => {
+        await userService_1.prisma.$disconnect();
+    });
 });

@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.repayLoanService = exports.disburseLoanService = exports.getAllLoansByBorrower = exports.getOpenLoansService = exports.fundLoanService = exports.getLenderDashboardData = exports.getBorrowerDashboardData = exports.createLoanService = void 0;
 const client_1 = require("@prisma/client");
@@ -81,20 +72,20 @@ const convertDecimalToNumber = (decimal) => {
     }
     return Number(decimal) || 0;
 };
-const getLoanCountByBorrower = (borrowerId) => __awaiter(void 0, void 0, void 0, function* () {
+const getLoanCountByBorrower = async (borrowerId) => {
     return prisma.loan.count({
         where: { borrowerId },
     });
-});
-const getPendingLoanCountByBorrower = (borrowerId) => __awaiter(void 0, void 0, void 0, function* () {
+};
+const getPendingLoanCountByBorrower = async (borrowerId) => {
     return prisma.loan.count({
         where: {
             borrowerId,
             status: client_1.LoanStatus.PENDING,
         },
     });
-});
-const getActiveLoansByBorrower = (borrowerId) => __awaiter(void 0, void 0, void 0, function* () {
+};
+const getActiveLoansByBorrower = async (borrowerId) => {
     return prisma.loan.findMany({
         where: {
             borrowerId,
@@ -103,8 +94,8 @@ const getActiveLoansByBorrower = (borrowerId) => __awaiter(void 0, void 0, void 
             },
         },
     });
-});
-const getInvestmentsByLender = (lenderId) => __awaiter(void 0, void 0, void 0, function* () {
+};
+const getInvestmentsByLender = async (lenderId) => {
     return prisma.loan.findMany({
         where: {
             fundedBy: {
@@ -116,8 +107,8 @@ const getInvestmentsByLender = (lenderId) => __awaiter(void 0, void 0, void 0, f
             interestRate: true,
         },
     });
-});
-const getRecentLoanListings = (...args_1) => __awaiter(void 0, [...args_1], void 0, function* (limit = MAX_NEW_LISTINGS) {
+};
+const getRecentLoanListings = async (limit = MAX_NEW_LISTINGS) => {
     return prisma.loan.findMany({
         where: { status: client_1.LoanStatus.PENDING },
         take: limit,
@@ -131,7 +122,7 @@ const getRecentLoanListings = (...args_1) => __awaiter(void 0, [...args_1], void
         },
         orderBy: { createdAt: "desc" },
     });
-});
+};
 const calculateInvestmentSummary = (investments) => {
     const totalInvested = investments.reduce((sum, loan) => sum + convertDecimalToNumber(loan.amountFunded), 0);
     // Simplified earnings calculation - should be more sophisticated later on
@@ -163,7 +154,7 @@ const formatLoanListings = (loans) => {
  * @param loanData - Loan creation data
  * @returns Created loan object
  */
-const createLoanService = (loanData) => __awaiter(void 0, void 0, void 0, function* () {
+const createLoanService = async (loanData) => {
     const durationUnit = loanData.durationUnit || "MONTHS";
     const totalInterest = calculateTotalInterest(loanData.amountRequested, loanData.interestRate, loanData.duration, durationUnit);
     const prismaLoanData = {
@@ -191,15 +182,15 @@ const createLoanService = (loanData) => __awaiter(void 0, void 0, void 0, functi
             },
         },
     });
-});
+};
 exports.createLoanService = createLoanService;
 /**
  * Get comprehensive dashboard data for a borrower
  * @param userId - Borrower's user ID
  * @returns Borrower dashboard data
  */
-const getBorrowerDashboardData = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    const [totalApplications, pendingApplications, activeLoans] = yield Promise.all([
+const getBorrowerDashboardData = async (userId) => {
+    const [totalApplications, pendingApplications, activeLoans] = await Promise.all([
         getLoanCountByBorrower(userId),
         getPendingLoanCountByBorrower(userId),
         getActiveLoansByBorrower(userId),
@@ -220,15 +211,15 @@ const getBorrowerDashboardData = (userId) => __awaiter(void 0, void 0, void 0, f
             updatedAt: loan.updatedAt,
         })),
     };
-});
+};
 exports.getBorrowerDashboardData = getBorrowerDashboardData;
 /**
  * Get comprehensive dashboard data for a lender
  * @param userId - Lender's user ID
  * @returns Lender dashboard data
  */
-const getLenderDashboardData = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    const [investments, newListings] = yield Promise.all([
+const getLenderDashboardData = async (userId) => {
+    const [investments, newListings] = await Promise.all([
         getInvestmentsByLender(userId),
         getRecentLoanListings(),
     ]);
@@ -238,18 +229,18 @@ const getLenderDashboardData = (userId) => __awaiter(void 0, void 0, void 0, fun
         investmentSummary,
         newListings: formattedListings,
     };
-});
+};
 exports.getLenderDashboardData = getLenderDashboardData;
 /**
  * Handles a lender's commitment to fund a loan (Phase 1: Escrow).
  * 1. Moves funds from Lender's availableBalance to escrowBalance (FUNDING_COMMIT).
  * 2. If 100% funded, changes status to FULLY_FUNDED, awaiting manual disbursement.
  */
-const fundLoanService = (loanId, lenderId, amount) => __awaiter(void 0, void 0, void 0, function* () {
+const fundLoanService = async (loanId, lenderId, amount) => {
     const fundingAmountDecimal = amount;
-    return prisma.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
-        const loan = yield tx.loan.findUnique({ where: { id: loanId } });
-        const lender = yield tx.user.findUnique({
+    return prisma.$transaction(async (tx) => {
+        const loan = await tx.loan.findUnique({ where: { id: loanId } });
+        const lender = await tx.user.findUnique({
             where: { id: lenderId },
             select: { availableBalance: true, escrowBalance: true },
         });
@@ -271,7 +262,7 @@ const fundLoanService = (loanId, lenderId, amount) => __awaiter(void 0, void 0, 
         if (fundingAmount <= 0)
             throw new Error("Loan is already fully funded.");
         // 1. Debit the lender's AVAILABLE balance and credit their ESCROW balance
-        yield tx.user.update({
+        await tx.user.update({
             where: { id: lenderId },
             data: {
                 availableBalance: { decrement: fundingAmountDecimal },
@@ -279,7 +270,7 @@ const fundLoanService = (loanId, lenderId, amount) => __awaiter(void 0, void 0, 
             },
         });
         // 2. Record the commitment transaction
-        yield tx.transaction.create({
+        await tx.transaction.create({
             data: {
                 userId: lenderId,
                 loanId: loanId,
@@ -293,7 +284,7 @@ const fundLoanService = (loanId, lenderId, amount) => __awaiter(void 0, void 0, 
         let newLoanStatus = newAmountFunded >= loan.amountRequested.toNumber()
             ? client_1.LoanStatus.FULLY_FUNDED
             : client_1.LoanStatus.FUNDING;
-        yield tx.loan.update({
+        await tx.loan.update({
             where: { id: loanId },
             data: {
                 amountFunded: newAmountFunded,
@@ -301,10 +292,10 @@ const fundLoanService = (loanId, lenderId, amount) => __awaiter(void 0, void 0, 
             },
         });
         return { message: "Loan funded successfully.", status: newLoanStatus };
-    }));
-});
+    });
+};
 exports.fundLoanService = fundLoanService;
-const getOpenLoansService = (page, pageSize, query, minAmount, maxAmount, sortBy) => __awaiter(void 0, void 0, void 0, function* () {
+const getOpenLoansService = async (page, pageSize, query, minAmount, maxAmount, sortBy) => {
     const skip = (page - 1) * pageSize;
     // Build the dynamic 'where' clause for filtering and searching
     const where = {
@@ -319,10 +310,10 @@ const getOpenLoansService = (page, pageSize, query, minAmount, maxAmount, sortBy
         ];
     }
     if (minAmount) {
-        where.amountRequested = Object.assign(Object.assign({}, where.amountRequested), { gte: minAmount });
+        where.amountRequested = { ...where.amountRequested, gte: minAmount };
     }
     if (maxAmount) {
-        where.amountRequested = Object.assign(Object.assign({}, where.amountRequested), { lte: maxAmount });
+        where.amountRequested = { ...where.amountRequested, lte: maxAmount };
     }
     // Build the dynamic 'orderBy' clause for sorting
     const orderBy = sortBy ? {} : { createdAt: "desc" };
@@ -331,7 +322,7 @@ const getOpenLoansService = (page, pageSize, query, minAmount, maxAmount, sortBy
         orderBy[field] = direction;
     }
     // Fetch the paginated loans
-    const loans = yield prisma.loan.findMany({
+    const loans = await prisma.loan.findMany({
         where,
         skip,
         take: pageSize,
@@ -360,7 +351,7 @@ const getOpenLoansService = (page, pageSize, query, minAmount, maxAmount, sortBy
         orderBy,
     });
     // Get the total count of loans for pagination (without skip/take)
-    const totalCount = yield prisma.loan.count({ where });
+    const totalCount = await prisma.loan.count({ where });
     const totalPages = Math.ceil(totalCount / pageSize);
     // Map and normalize returned loans to plain objects and convert Decimals
     const mappedLoans = loans.map((loan) => ({
@@ -381,14 +372,14 @@ const getOpenLoansService = (page, pageSize, query, minAmount, maxAmount, sortBy
         updatedAt: loan.updatedAt,
     }));
     return { loans: mappedLoans, totalCount, totalPages };
-});
+};
 exports.getOpenLoansService = getOpenLoansService;
 /**
  * Get all loans created by a borrower regardless of status
  * @param borrowerId - Borrower's user ID
  * @returns Array of loans with details
  */
-const getAllLoansByBorrower = (borrowerId_1, ...args_1) => __awaiter(void 0, [borrowerId_1, ...args_1], void 0, function* (borrowerId, page = 1, pageSize = 10, q, minAmount, maxAmount, status) {
+const getAllLoansByBorrower = async (borrowerId, page = 1, pageSize = 10, q, minAmount, maxAmount, status) => {
     const skip = (page - 1) * pageSize;
     const where = { borrowerId };
     if (q) {
@@ -405,10 +396,10 @@ const getAllLoansByBorrower = (borrowerId_1, ...args_1) => __awaiter(void 0, [bo
         where.OR = orConditions;
     }
     if (minAmount) {
-        where.amountRequested = Object.assign(Object.assign({}, where.amountRequested), { gte: minAmount });
+        where.amountRequested = { ...where.amountRequested, gte: minAmount };
     }
     if (maxAmount) {
-        where.amountRequested = Object.assign(Object.assign({}, where.amountRequested), { lte: maxAmount });
+        where.amountRequested = { ...where.amountRequested, lte: maxAmount };
     }
     if (status) {
         const statusUpper = status.toUpperCase();
@@ -417,13 +408,13 @@ const getAllLoansByBorrower = (borrowerId_1, ...args_1) => __awaiter(void 0, [bo
             where.status = statusUpper;
         }
     }
-    const loans = yield prisma.loan.findMany({
+    const loans = await prisma.loan.findMany({
         where,
         skip,
         take: pageSize,
         orderBy: { createdAt: "desc" },
     });
-    const totalCount = yield prisma.loan.count({ where });
+    const totalCount = await prisma.loan.count({ where });
     const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
     const mapped = loans.map((loan) => ({
         id: loan.id,
@@ -438,7 +429,7 @@ const getAllLoansByBorrower = (borrowerId_1, ...args_1) => __awaiter(void 0, [bo
         updatedAt: loan.updatedAt,
     }));
     return { loans: mapped, totalCount, totalPages };
-});
+};
 exports.getAllLoansByBorrower = getAllLoansByBorrower;
 /**
  * Manually triggered after a loan reaches FULLY_FUNDED status.
@@ -446,9 +437,9 @@ exports.getAllLoansByBorrower = getAllLoansByBorrower;
  * 2. Credits the borrower's available balance (DISBURSEMENT).
  * 3. Sets the loan status to ACTIVE.
  */
-const disburseLoanService = (loanId) => __awaiter(void 0, void 0, void 0, function* () {
-    return prisma.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
-        const loan = yield tx.loan.findUnique({ where: { id: loanId } });
+const disburseLoanService = async (loanId) => {
+    return prisma.$transaction(async (tx) => {
+        const loan = await tx.loan.findUnique({ where: { id: loanId } });
         if (!loan)
             throw new Error("Loan not found.");
         // Check for the correct status before disbursement
@@ -457,7 +448,7 @@ const disburseLoanService = (loanId) => __awaiter(void 0, void 0, void 0, functi
         }
         const disbursementAmount = loan.amountRequested.toNumber();
         // 1. Find all funding commitments to calculate contribution shares
-        const fundingTransactions = yield tx.transaction.findMany({
+        const fundingTransactions = await tx.transaction.findMany({
             where: { loanId: loanId, type: client_1.TransactionType.FUNDING_COMMIT },
             select: { userId: true, amount: true },
         });
@@ -470,12 +461,12 @@ const disburseLoanService = (loanId) => __awaiter(void 0, void 0, void 0, functi
         for (const [contributorId, committedAmount] of Object.entries(lenderCommitments)) {
             const committedAmountDecimal = committedAmount;
             // a. Debit the lender's escrowBalance (clearing the hold)
-            yield tx.user.update({
+            await tx.user.update({
                 where: { id: contributorId },
                 data: { escrowBalance: { decrement: committedAmountDecimal } },
             });
             // b. Record the funding release transaction
-            yield tx.transaction.create({
+            await tx.transaction.create({
                 data: {
                     userId: contributorId,
                     loanId: loanId,
@@ -486,12 +477,12 @@ const disburseLoanService = (loanId) => __awaiter(void 0, void 0, void 0, functi
             });
         }
         // 3. Credit the borrower's available balance
-        yield tx.user.update({
+        await tx.user.update({
             where: { id: loan.borrowerId },
             data: { availableBalance: { increment: disbursementAmount } },
         });
         // 4. Record the disbursement transaction (Borrower receiving the funds)
-        yield tx.transaction.create({
+        await tx.transaction.create({
             data: {
                 userId: loan.borrowerId,
                 loanId: loanId,
@@ -501,7 +492,7 @@ const disburseLoanService = (loanId) => __awaiter(void 0, void 0, void 0, functi
             },
         });
         // 5. Set loan status to ACTIVE
-        yield tx.loan.update({
+        await tx.loan.update({
             where: { id: loanId },
             data: { status: client_1.LoanStatus.ACTIVE },
         });
@@ -509,19 +500,19 @@ const disburseLoanService = (loanId) => __awaiter(void 0, void 0, void 0, functi
             message: "Loan successfully disbursed to borrower.",
             status: client_1.LoanStatus.ACTIVE,
         };
-    }));
-});
+    });
+};
 exports.disburseLoanService = disburseLoanService;
 // --- repayLoanService: PRO-RATA DISTRIBUTION ---
 /**
  * Handles a borrower's repayment and distributes principal and interest pro-rata to all lenders.
  * Repayment is only allowed when the loan status is ACTIVE.
  */
-const repayLoanService = (loanId, borrowerId, paymentAmount) => __awaiter(void 0, void 0, void 0, function* () {
+const repayLoanService = async (loanId, borrowerId, paymentAmount) => {
     const paymentAmountDecimal = paymentAmount;
-    return prisma.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
+    return prisma.$transaction(async (tx) => {
         // 1. Fetch loan and borrower data
-        const loan = yield tx.loan.findUnique({
+        const loan = await tx.loan.findUnique({
             where: { id: loanId },
             select: {
                 id: true,
@@ -540,7 +531,7 @@ const repayLoanService = (loanId, borrowerId, paymentAmount) => __awaiter(void 0
         // Check for ACTIVE status
         if (loan.status !== client_1.LoanStatus.ACTIVE)
             throw new Error("Loan is not in an ACTIVE state for repayment.");
-        const borrower = yield tx.user.findUnique({
+        const borrower = await tx.user.findUnique({
             where: { id: borrowerId },
             select: { availableBalance: true, escrowBalance: true },
         });
@@ -557,7 +548,7 @@ const repayLoanService = (loanId, borrowerId, paymentAmount) => __awaiter(void 0
         const principalPortion = paymentAmount - interestPerPayment;
         const interestPortion = interestPerPayment;
         // 3. DEBIT BORROWER & UPDATE LOAN STATUS
-        yield tx.user.update({
+        await tx.user.update({
             where: { id: borrowerId },
             data: { availableBalance: { decrement: paymentAmountDecimal } },
         });
@@ -565,7 +556,7 @@ const repayLoanService = (loanId, borrowerId, paymentAmount) => __awaiter(void 0
         let newStatus = newPrincipalRepaid >= loan.amountRequested.toNumber()
             ? client_1.LoanStatus.REPAID
             : loan.status;
-        yield tx.loan.update({
+        await tx.loan.update({
             where: { id: loanId },
             data: {
                 principalRepaid: newPrincipalRepaid,
@@ -573,7 +564,7 @@ const repayLoanService = (loanId, borrowerId, paymentAmount) => __awaiter(void 0
             },
         });
         // Record borrower's repayment transaction
-        yield tx.transaction.create({
+        await tx.transaction.create({
             data: {
                 userId: borrowerId,
                 loanId: loanId,
@@ -584,7 +575,7 @@ const repayLoanService = (loanId, borrowerId, paymentAmount) => __awaiter(void 0
         });
         // 4. DISTRIBUTE FUNDS TO LENDERS (PRO-RATA)
         // Find original FUNDING_COMMIT transactions to calculate contribution shares
-        const fundingTransactions = yield tx.transaction.findMany({
+        const fundingTransactions = await tx.transaction.findMany({
             where: { loanId: loanId, type: client_1.TransactionType.FUNDING_COMMIT },
             select: { userId: true, amount: true },
         });
@@ -601,12 +592,12 @@ const repayLoanService = (loanId, borrowerId, paymentAmount) => __awaiter(void 0
             const creditAmount = principalShare + interestShare;
             const creditAmountDecimal = creditAmount;
             // Credit the lender's available balance
-            yield tx.user.update({
+            await tx.user.update({
                 where: { id: lenderId },
                 data: { availableBalance: { increment: creditAmountDecimal } },
             });
             // Record distribution transaction for the lender
-            yield tx.transaction.create({
+            await tx.transaction.create({
                 data: {
                     userId: lenderId,
                     loanId: loanId,
@@ -620,6 +611,6 @@ const repayLoanService = (loanId, borrowerId, paymentAmount) => __awaiter(void 0
             message: "Repayment successfully processed.",
             newStatus: newStatus,
         };
-    }));
-});
+    });
+};
 exports.repayLoanService = repayLoanService;

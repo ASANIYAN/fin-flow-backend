@@ -33,27 +33,18 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const prisma_1 = require("../lib/prisma");
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const prisma = new prisma_1.PrismaClient();
 describe("Schema Field Validation Tests", () => {
-    beforeAll(() => __awaiter(void 0, void 0, void 0, function* () {
+    beforeAll(async () => {
         // No setup needed for these tests as we're just validating schema compatibility
-    }));
-    afterAll(() => __awaiter(void 0, void 0, void 0, function* () {
-        yield prisma.$disconnect();
-    }));
+    });
+    afterAll(async () => {
+        await prisma.$disconnect();
+    });
     describe("User Model Field Validation", () => {
         test("should have all required fields used in userService", () => {
             // Test that we can access all fields used in userService without TypeScript errors
@@ -94,7 +85,7 @@ describe("Schema Field Validation Tests", () => {
             }).not.toThrow();
             expect(Object.keys(userFields).length).toBeGreaterThan(0);
         });
-        test("should support user creation with all expected fields", () => __awaiter(void 0, void 0, void 0, function* () {
+        test("should support user creation with all expected fields", async () => {
             const userData = {
                 email: "schema.test@example.com",
                 firstName: "Schema",
@@ -108,8 +99,8 @@ describe("Schema Field Validation Tests", () => {
                 data: userData,
             });
             expect(createQuery).toBeDefined();
-        }));
-        test("should support user update with verification fields", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        test("should support user update with verification fields", async () => {
             const updateData = {
                 isEmailVerified: true,
                 emailVerifiedAt: new Date(),
@@ -121,18 +112,18 @@ describe("Schema Field Validation Tests", () => {
                 data: updateData,
             });
             expect(updateQuery).toBeDefined();
-        }));
-        test("should support finding user by verification token", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        test("should support finding user by verification token", async () => {
             const findQuery = prisma.user.findUnique({
                 where: {
                     verificationToken: "some-token",
                 },
             });
             expect(findQuery).toBeDefined();
-        }));
+        });
     });
     describe("Loan Model Field Validation", () => {
-        test("should have all required fields used in loanService", () => __awaiter(void 0, void 0, void 0, function* () {
+        test("should have all required fields used in loanService", async () => {
             const loanQuery = prisma.loan.findFirst({
                 select: {
                     id: true,
@@ -151,8 +142,8 @@ describe("Schema Field Validation Tests", () => {
                 },
             });
             expect(loanQuery).toBeDefined();
-        }));
-        test("should support loan creation with all expected fields", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        test("should support loan creation with all expected fields", async () => {
             const loanData = {
                 title: "Test Loan",
                 description: "Test Description",
@@ -166,10 +157,10 @@ describe("Schema Field Validation Tests", () => {
                 data: loanData,
             });
             expect(createQuery).toBeDefined();
-        }));
+        });
     });
     describe("Transaction Model Field Validation", () => {
-        test("should have all required fields used in services", () => __awaiter(void 0, void 0, void 0, function* () {
+        test("should have all required fields used in services", async () => {
             const transactionQuery = prisma.transaction.findFirst({
                 select: {
                     id: true,
@@ -184,7 +175,7 @@ describe("Schema Field Validation Tests", () => {
                 },
             });
             expect(transactionQuery).toBeDefined();
-        }));
+        });
         test("should support all transaction types", () => {
             const transactionTypes = [
                 "DEPOSIT",

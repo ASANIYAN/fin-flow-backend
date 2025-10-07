@@ -22,9 +22,6 @@ const router = (0, express_1.Router)();
  *               oneOf:
  *                 - $ref: '#/components/schemas/BorrowerDashboard'
  *                 - $ref: '#/components/schemas/LenderDashboard'
- *           application/json:
- *             schema:
- *               oneOf:
  *                 - type: object
  *                   title: Borrower Dashboard Response
  *                   properties:

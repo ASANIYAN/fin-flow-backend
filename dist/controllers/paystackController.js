@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -23,8 +14,7 @@ if (!PAYSTACK_SECRET_KEY) {
     throw new Error("PAYSTACK_SECRET_KEY environment variable is not set.");
 }
 // The endpoint called ONLY by Paystack's server
-const handleWebhook = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c;
+const handleWebhook = async (req, res) => {
     const hash = req.headers["x-paystack-signature"];
     // 1. Check for the signature header
     if (!hash) {
@@ -47,10 +37,10 @@ const handleWebhook = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     if (event.event === "charge.success") {
         try {
             // Use the already defined 'event' variable from above
-            const reference = (_a = event.data) === null || _a === void 0 ? void 0 : _a.reference;
-            const amountInKobo = (_b = event.data) === null || _b === void 0 ? void 0 : _b.amount;
-            const metadata = (_c = event.data) === null || _c === void 0 ? void 0 : _c.metadata;
-            const userId = metadata === null || metadata === void 0 ? void 0 : metadata.userId;
+            const reference = event.data?.reference;
+            const amountInKobo = event.data?.amount;
+            const metadata = event.data?.metadata;
+            const userId = metadata?.userId;
             if (!reference || !amountInKobo || !userId) {
                 // Malformed webhook data: missing reference, amount, or userId
                 return (0, message_1.successResponse)(res, 200, "Webhook received but data incomplete.");
@@ -58,7 +48,7 @@ const handleWebhook = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             const verifiedAmount = amountInKobo / 100;
             // 4. Call the central processing function
             // NOTE: This assumes you added the userId to the Paystack metadata during the frontend call.
-            yield (0, walletService_1.processVerifiedDeposit)(userId, verifiedAmount, reference);
+            await (0, walletService_1.processVerifiedDeposit)(userId, verifiedAmount, reference);
             // CRITICAL: Must return 200 OK to tell Paystack the event was handled.
             return (0, message_1.successResponse)(res, 200, "Webhook processed successfully.");
         }
@@ -69,26 +59,26 @@ const handleWebhook = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
     // Acknowledge receipt of all other events (like 'transfer.success')
     return (0, message_1.successResponse)(res, 200, "Event received, no action taken.");
-});
+};
 exports.handleWebhook = handleWebhook;
-const getBanks = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getBanks = async (req, res) => {
     try {
-        const banks = yield (0, paystackService_1.listBanks)();
+        const banks = await (0, paystackService_1.listBanks)();
         return (0, message_1.successResponse)(res, 200, "Bank list fetched successfully.", banks);
     }
     catch (error) {
         // Error fetching banks
         return (0, message_1.errorResponse)(res, 500, "Unable to fetch bank list.");
     }
-});
+};
 exports.getBanks = getBanks;
-const resolveAccountName = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const resolveAccountName = async (req, res) => {
     const { accountNumber, bankCode } = req.body;
     if (!accountNumber || !bankCode) {
         return (0, message_1.errorResponse)(res, 400, "Both accountNumber and bankCode are required.");
     }
     try {
-        const resolution = yield (0, paystackService_1.resolveAccountNameService)(accountNumber, bankCode);
+        const resolution = await (0, paystackService_1.resolveAccountNameService)(accountNumber, bankCode);
         return (0, message_1.successResponse)(res, 200, "Account resolved successfully.", {
             account_number: resolution.account_number,
             account_name: resolution.account_name,
@@ -99,5 +89,5 @@ const resolveAccountName = (req, res) => __awaiter(void 0, void 0, void 0, funct
         const message = error instanceof Error ? error.message : "An unexpected error occurred.";
         return (0, message_1.errorResponse)(res, 500, message);
     }
-});
+};
 exports.resolveAccountName = resolveAccountName;

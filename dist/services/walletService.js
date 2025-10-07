@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -28,10 +19,10 @@ const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
  * @param userId The ID of the user to credit.
  * @param externalRef The reference from Paystack.
  */
-const processVerifiedDeposit = (userId, verifiedAmount, reference) => __awaiter(void 0, void 0, void 0, function* () {
-    return prisma.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
+const processVerifiedDeposit = async (userId, verifiedAmount, reference) => {
+    return prisma.$transaction(async (tx) => {
         // 1. Check if the deposit has already been processed by externalRef (unique index)
-        const existingTransaction = yield tx.transaction.findUnique({
+        const existingTransaction = await tx.transaction.findUnique({
             where: {
                 externalRef: reference,
             },
@@ -42,7 +33,7 @@ const processVerifiedDeposit = (userId, verifiedAmount, reference) => __awaiter(
             return;
         }
         // 2. Update the user's wallet balance
-        const user = yield tx.user.findUnique({
+        const user = await tx.user.findUnique({
             where: { id: userId },
             select: { availableBalance: true },
         });
@@ -50,12 +41,12 @@ const processVerifiedDeposit = (userId, verifiedAmount, reference) => __awaiter(
             throw new Error("User not found during deposit processing.");
         }
         const newBalance = user.availableBalance.toNumber() + verifiedAmount;
-        yield tx.user.update({
+        await tx.user.update({
             where: { id: userId },
             data: { availableBalance: newBalance },
         });
         // 3. Create a transaction record with the unique external reference
-        yield tx.transaction.create({
+        await tx.transaction.create({
             data: {
                 userId: userId,
                 amount: verifiedAmount,
@@ -64,21 +55,20 @@ const processVerifiedDeposit = (userId, verifiedAmount, reference) => __awaiter(
                 externalRef: reference, // Save the unique external reference
             },
         });
-    }));
-});
+    });
+};
 exports.processVerifiedDeposit = processVerifiedDeposit;
 /**
  * * Handles the server-side verification request initiated by the frontend callback.
  * This ONLY confirms the payment status and logs the intent, it does NOT update the balance.
  */
-const confirmDepositAttemptService = (userId, amount, reference) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c;
+const confirmDepositAttemptService = async (userId, amount, reference) => {
     const MAX_RETRIES = 3; // Maximum attempts
     let currentRetry = 0;
     while (currentRetry < MAX_RETRIES) {
         try {
             // 1. Verify the transaction with Paystack (critical step)
-            const response = yield axios_1.default.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+            const response = await axios_1.default.get(`https://api.paystack.co/transaction/verify/${reference}`, {
                 headers: {
                     Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
                 },
@@ -103,14 +93,14 @@ const confirmDepositAttemptService = (userId, amount, reference) => __awaiter(vo
         }
         catch (error) {
             if (axios_1.default.isAxiosError(error) &&
-                ((_a = error.response) === null || _a === void 0 ? void 0 : _a.status) === 400 &&
-                ((_c = (_b = error.response) === null || _b === void 0 ? void 0 : _b.data) === null || _c === void 0 ? void 0 : _c.code) === "transaction_not_found") {
+                error.response?.status === 400 &&
+                error.response?.data?.code === "transaction_not_found") {
                 // Only retry if it's the specific "Transaction reference not found" error
                 currentRetry++;
                 const delay = Math.pow(2, currentRetry) * 500; // Exponential backoff: 1s, 2s, 4s...
                 // Paystack reference not found; will retry
                 if (currentRetry < MAX_RETRIES) {
-                    yield (0, utils_1.sleep)(delay);
+                    await (0, utils_1.sleep)(delay);
                     continue; // Go to the next retry attempt
                 }
             }
@@ -121,10 +111,10 @@ const confirmDepositAttemptService = (userId, amount, reference) => __awaiter(vo
     }
     // Should only be reached if the loop finishes without success or final throw
     throw new Error("Failed to confirm deposit after multiple retries.");
-});
+};
 exports.confirmDepositAttemptService = confirmDepositAttemptService;
-const createTransferRecipient = (name, accountNumber, bankCode) => __awaiter(void 0, void 0, void 0, function* () {
-    const response = yield axios_1.default.post(`https://api.paystack.co/transferrecipient`, {
+const createTransferRecipient = async (name, accountNumber, bankCode) => {
+    const response = await axios_1.default.post(`https://api.paystack.co/transferrecipient`, {
         type: "nuban",
         name: name,
         account_number: accountNumber,
@@ -136,10 +126,10 @@ const createTransferRecipient = (name, accountNumber, bankCode) => __awaiter(voi
         },
     });
     return response.data.data.recipient_code;
-});
+};
 // New function to initiate a transfer with Paystack
-const initiateTransfer = (amount, recipientCode) => __awaiter(void 0, void 0, void 0, function* () {
-    const response = yield axios_1.default.post(`https://api.paystack.co/transfer`, {
+const initiateTransfer = async (amount, recipientCode) => {
+    const response = await axios_1.default.post(`https://api.paystack.co/transfer`, {
         source: "balance",
         amount: amount * 100, // Paystack uses kobo
         recipient: recipientCode,
@@ -150,25 +140,25 @@ const initiateTransfer = (amount, recipientCode) => __awaiter(void 0, void 0, vo
         },
     });
     return response.data.data.reference;
-});
-const withdrawFundsService = (userId, amount, accountNumber, bankCode) => __awaiter(void 0, void 0, void 0, function* () {
-    return prisma.$transaction((prisma) => __awaiter(void 0, void 0, void 0, function* () {
-        const user = yield (0, userService_1.findUserById)(userId);
+};
+const withdrawFundsService = async (userId, amount, accountNumber, bankCode) => {
+    return prisma.$transaction(async (prisma) => {
+        const user = await (0, userService_1.findUserById)(userId);
         if (!user || user.availableBalance.toNumber() < amount) {
             throw new Error("Insufficient funds in wallet.");
         }
         // 1. Create a transfer recipient with Paystack
-        const recipientCode = yield createTransferRecipient(`${user.firstName} ${user.lastName}`, accountNumber, bankCode);
+        const recipientCode = await createTransferRecipient(`${user.firstName} ${user.lastName}`, accountNumber, bankCode);
         // 2. Debit the user's wallet
         const newBalance = user.availableBalance.toNumber() - amount;
-        yield prisma.user.update({
+        await prisma.user.update({
             where: { id: userId },
             data: { availableBalance: newBalance },
         });
         // 3. Initiate the transfer with Paystack
-        const transferReference = yield initiateTransfer(amount, recipientCode);
+        const transferReference = await initiateTransfer(amount, recipientCode);
         // 4. Create a transaction record
-        yield prisma.transaction.create({
+        await prisma.transaction.create({
             data: {
                 userId: userId,
                 amount: amount,
@@ -177,6 +167,6 @@ const withdrawFundsService = (userId, amount, accountNumber, bankCode) => __awai
             },
         });
         return { message: "Withdrawal initiated successfully." };
-    }));
-});
+    });
+};
 exports.withdrawFundsService = withdrawFundsService;

@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -20,13 +11,13 @@ const emailService_1 = require("../utils/emailService");
 const userService_1 = require("../services/userService");
 const validation_1 = require("../utils/validation");
 const client_1 = require("@prisma/client");
-const sendVerificationEmail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const sendVerificationEmail = async (req, res) => {
     try {
         const { email } = req.body;
         if (!email) {
             return (0, message_1.errorResponse)(res, 400, "Email is required");
         }
-        const user = yield (0, userService_1.findUserByEmail)(email);
+        const user = await (0, userService_1.findUserByEmail)(email);
         if (!user) {
             return (0, message_1.errorResponse)(res, 404, "User not found");
         }
@@ -34,7 +25,7 @@ const sendVerificationEmail = (req, res) => __awaiter(void 0, void 0, void 0, fu
             return (0, message_1.errorResponse)(res, 400, "Email is already verified");
         }
         const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${user.verificationToken}`;
-        yield (0, emailService_1.sendEmail)({
+        await (0, emailService_1.sendEmail)({
             to: user.email,
             subject: "Verify Your Email Address",
             html: `<p>Please verify your email by clicking the following link:</p>
@@ -46,9 +37,9 @@ const sendVerificationEmail = (req, res) => __awaiter(void 0, void 0, void 0, fu
         // Unexpected error in sendVerificationEmail
         return (0, message_1.errorResponse)(res, 500, "An unexpected error occurred", error);
     }
-});
+};
 exports.sendVerificationEmail = sendVerificationEmail;
-const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const signup = async (req, res) => {
     const { email, password, confirmPassword, firstName, lastName, role } = req.body;
     // Define validation schema for signup
     const signupValidationSchema = {
@@ -107,10 +98,10 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         });
     }
     try {
-        const newUser = yield (0, userService_1.createUser)(email, password, firstName, lastName, role);
+        const newUser = await (0, userService_1.createUser)(email, password, firstName, lastName, role);
         // Send verification email
         const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${newUser.verificationToken}`;
-        yield (0, emailService_1.sendEmail)({
+        await (0, emailService_1.sendEmail)({
             to: newUser.email,
             subject: "Verify Your Email Address",
             html: `<p>Please verify your email by clicking the following link:</p>
@@ -134,16 +125,16 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         // Unexpected error during signup
         return (0, message_1.errorResponse)(res, 500, "An unexpected error occurred", error);
     }
-});
+};
 exports.signup = signup;
-const verifyEmail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const verifyEmail = async (req, res) => {
     try {
         const { token } = req.params;
-        const user = yield (0, userService_1.findUserByVerificationToken)(token);
+        const user = await (0, userService_1.findUserByVerificationToken)(token);
         if (!user) {
             return (0, message_1.errorResponse)(res, 400, "Invalid or expired verification token.");
         }
-        yield (0, userService_1.verifyUser)(user.id);
+        await (0, userService_1.verifyUser)(user.id);
         // Return success response for frontend to handle redirection
         return (0, message_1.successResponse)(res, 200, "Email verified successfully");
     }
@@ -151,9 +142,9 @@ const verifyEmail = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         // Unexpected error during verifyEmail
         return (0, message_1.errorResponse)(res, 500, "An unexpected error occurred", error);
     }
-});
+};
 exports.verifyEmail = verifyEmail;
-const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const login = async (req, res) => {
     // Define validation schema for login
     const loginValidationSchema = {
         email: {
@@ -174,11 +165,11 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
     const { email, password } = req.body;
     try {
-        const user = yield (0, userService_1.findUserByEmail)(email);
+        const user = await (0, userService_1.findUserByEmail)(email);
         if (!user) {
             return (0, message_1.errorResponse)(res, 401, "Invalid email or password");
         }
-        const isMatch = yield (0, userService_1.comparePasswords)(password, user.password);
+        const isMatch = await (0, userService_1.comparePasswords)(password, user.password);
         if (!isMatch) {
             return (0, message_1.errorResponse)(res, 401, "Invalid email or password");
         }
@@ -216,20 +207,20 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         // Unexpected error during login
         return (0, message_1.errorResponse)(res, 500, "An unexpected error occurred", error);
     }
-});
+};
 exports.login = login;
-const forgotPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
         if (!email) {
             return (0, message_1.errorResponse)(res, 400, "Email is required");
         }
-        const resetToken = yield (0, userService_1.generatePasswordResetToken)(email);
+        const resetToken = await (0, userService_1.generatePasswordResetToken)(email);
         if (!resetToken) {
             return (0, message_1.successResponse)(res, 200, "If a user with that email exists, a password reset link has been sent.");
         }
         const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${email}`;
-        yield (0, emailService_1.sendEmail)({
+        await (0, emailService_1.sendEmail)({
             to: email,
             subject: "Password Reset Request",
             html: `
@@ -245,15 +236,15 @@ const forgotPassword = (req, res) => __awaiter(void 0, void 0, void 0, function*
         // Unexpected error during forgotPassword
         return (0, message_1.errorResponse)(res, 500, "An unexpected error occurred", error);
     }
-});
+};
 exports.forgotPassword = forgotPassword;
-const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const resetPassword = async (req, res) => {
     try {
         const { token, newPassword } = req.body;
         if (!token || !newPassword) {
             return (0, message_1.errorResponse)(res, 400, "Token and password are required");
         }
-        const updatedUser = yield (0, userService_1.resetUserPassword)(token, newPassword);
+        const updatedUser = await (0, userService_1.resetUserPassword)(token, newPassword);
         if (!updatedUser) {
             return (0, message_1.errorResponse)(res, 400, "Invalid or expired password reset token.");
         }
@@ -263,5 +254,5 @@ const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         // Unexpected error during resetPassword
         return (0, message_1.errorResponse)(res, 500, "An unexpected error occurred", error);
     }
-});
+};
 exports.resetPassword = resetPassword;

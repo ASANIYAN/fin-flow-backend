@@ -1,22 +1,13 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUserTransactions = exports.updateUserProfile = exports.getUserProfile = void 0;
 const userService_1 = require("../services/userService");
 const message_1 = require("../utils/message");
 const validation_1 = require("../utils/validation");
-const getUserProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getUserProfile = async (req, res) => {
     const user = req.user;
     try {
-        const userProfile = yield (0, userService_1.getUserProfileService)(user.id);
+        const userProfile = await (0, userService_1.getUserProfileService)(user.id);
         if (!userProfile) {
             return (0, message_1.errorResponse)(res, 404, "User not found.");
         }
@@ -26,9 +17,9 @@ const getUserProfile = (req, res) => __awaiter(void 0, void 0, void 0, function*
         // Error fetching user profile
         return (0, message_1.errorResponse)(res, 500, "An unexpected error occurred.");
     }
-});
+};
 exports.getUserProfile = getUserProfile;
-const updateUserProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const updateUserProfile = async (req, res) => {
     const user = req.user;
     const updateData = req.body;
     // Define validation schema for profile update
@@ -57,7 +48,7 @@ const updateUserProfile = (req, res) => __awaiter(void 0, void 0, void 0, functi
         return; // Response already sent by validateAndRespond
     }
     try {
-        const updatedProfile = yield (0, userService_1.updateUserProfileService)(user.id, updateData);
+        const updatedProfile = await (0, userService_1.updateUserProfileService)(user.id, updateData);
         return (0, message_1.successResponse)(res, 200, "User profile updated successfully.", updatedProfile);
     }
     catch (error) {
@@ -67,9 +58,9 @@ const updateUserProfile = (req, res) => __awaiter(void 0, void 0, void 0, functi
         }
         return (0, message_1.errorResponse)(res, 500, "An unexpected error occurred.");
     }
-});
+};
 exports.updateUserProfile = updateUserProfile;
-const getUserTransactions = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getUserTransactions = async (req, res) => {
     const user = req.user;
     const { page, pageSize, q } = req.query;
     // Define validation schema for query parameters
@@ -101,7 +92,7 @@ const getUserTransactions = (req, res) => __awaiter(void 0, void 0, void 0, func
     const size = parseInt(pageSize) || 10;
     const searchQuery = q;
     try {
-        const { transactions, totalCount, totalPages } = yield (0, userService_1.getUserTransactionsService)(user.id, pageNumber, size, searchQuery);
+        const { transactions, totalCount, totalPages } = await (0, userService_1.getUserTransactionsService)(user.id, pageNumber, size, searchQuery);
         return (0, message_1.successResponse)(res, 200, "Transactions fetched successfully.", {
             transactions,
             page: pageNumber,
@@ -114,5 +105,5 @@ const getUserTransactions = (req, res) => __awaiter(void 0, void 0, void 0, func
         // Error fetching user transactions
         return (0, message_1.errorResponse)(res, 500, "An unexpected error occurred.");
     }
-});
+};
 exports.getUserTransactions = getUserTransactions;

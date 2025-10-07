@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -70,20 +61,20 @@ const createWebhookSignature = (payload) => {
         .digest("hex");
 };
 describe("Paystack Endpoints", () => {
-    beforeEach(() => __awaiter(void 0, void 0, void 0, function* () {
+    beforeEach(async () => {
         // Clean up test data before each test (order matters for foreign keys)
-        yield userService_1.prisma.transaction.deleteMany({});
-        yield userService_1.prisma.loan.deleteMany({});
-        yield userService_1.prisma.user.deleteMany({});
+        await userService_1.prisma.transaction.deleteMany({});
+        await userService_1.prisma.loan.deleteMany({});
+        await userService_1.prisma.user.deleteMany({});
         // Wait a bit to ensure setup is complete
-        yield new Promise((resolve) => setTimeout(resolve, 100));
-    }));
-    afterAll(() => __awaiter(void 0, void 0, void 0, function* () {
-        yield userService_1.prisma.$disconnect();
-    }));
+        await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+    afterAll(async () => {
+        await userService_1.prisma.$disconnect();
+    });
     describe("GET /api/paystack/banks", () => {
-        it("should return list of Nigerian banks", () => __awaiter(void 0, void 0, void 0, function* () {
-            const res = yield (0, supertest_1.default)(server_1.default).get("/api/paystack/banks");
+        it("should return list of Nigerian banks", async () => {
+            const res = await (0, supertest_1.default)(server_1.default).get("/api/paystack/banks");
             expect(res.statusCode).toEqual(200);
             expect(res.body).toHaveProperty("success", true);
             expect(res.body).toHaveProperty("data");
@@ -97,12 +88,12 @@ describe("Paystack Endpoints", () => {
             expect(bank).toHaveProperty("active");
             expect(bank).toHaveProperty("country");
             expect(bank).toHaveProperty("currency");
-        }));
+        });
     });
     describe("POST /api/paystack/webhook", () => {
-        beforeEach(() => __awaiter(void 0, void 0, void 0, function* () {
+        beforeEach(async () => {
             // Create a test user for webhook processing
-            yield userService_1.prisma.user.create({
+            await userService_1.prisma.user.create({
                 data: {
                     id: "test-user-id",
                     email: "webhook-user@test.com",
@@ -115,8 +106,8 @@ describe("Paystack Endpoints", () => {
                     escrowBalance: 0,
                 },
             });
-        }));
-        it("should process successful charge webhook", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should process successful charge webhook", async () => {
             const webhookPayload = {
                 event: "charge.success",
                 data: {
@@ -133,28 +124,28 @@ describe("Paystack Endpoints", () => {
                 },
             };
             const signature = createWebhookSignature(webhookPayload);
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/paystack/webhook")
                 .set("x-paystack-signature", signature)
                 .send(webhookPayload);
             expect(res.statusCode).toEqual(200);
             expect(res.body).toHaveProperty("success", true);
-        }));
-        it("should reject webhook without signature", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should reject webhook without signature", async () => {
             const webhookPayload = {
                 event: "charge.success",
                 data: {
                     reference: "ref_no_signature",
                 },
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/paystack/webhook")
                 .send(webhookPayload);
             expect(res.statusCode).toEqual(400);
             expect(res.body).toHaveProperty("success", false);
             expect(res.body.message).toContain("Missing webhook signature");
-        }));
-        it("should reject webhook with invalid signature", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should reject webhook with invalid signature", async () => {
             const webhookPayload = {
                 event: "charge.success",
                 data: {
@@ -162,14 +153,14 @@ describe("Paystack Endpoints", () => {
                 },
             };
             const invalidSignature = "invalid_signature_hash";
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/paystack/webhook")
                 .set("x-paystack-signature", invalidSignature)
                 .send(webhookPayload);
             expect(res.statusCode).toEqual(403);
             expect(res.body).toHaveProperty("success", false);
-        }));
-        it("should handle transfer success webhook", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should handle transfer success webhook", async () => {
             const webhookPayload = {
                 event: "transfer.success",
                 data: {
@@ -189,14 +180,14 @@ describe("Paystack Endpoints", () => {
                 },
             };
             const signature = createWebhookSignature(webhookPayload);
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/paystack/webhook")
                 .set("x-paystack-signature", signature)
                 .send(webhookPayload);
             expect(res.statusCode).toEqual(200);
             expect(res.body).toHaveProperty("success", true);
-        }));
-        it("should handle transfer failed webhook", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should handle transfer failed webhook", async () => {
             const webhookPayload = {
                 event: "transfer.failed",
                 data: {
@@ -216,14 +207,14 @@ describe("Paystack Endpoints", () => {
                 },
             };
             const signature = createWebhookSignature(webhookPayload);
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/paystack/webhook")
                 .set("x-paystack-signature", signature)
                 .send(webhookPayload);
             expect(res.statusCode).toEqual(200);
             expect(res.body).toHaveProperty("success", true);
-        }));
-        it("should ignore unknown webhook events", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should ignore unknown webhook events", async () => {
             const webhookPayload = {
                 event: "unknown.event",
                 data: {
@@ -231,30 +222,30 @@ describe("Paystack Endpoints", () => {
                 },
             };
             const signature = createWebhookSignature(webhookPayload);
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/paystack/webhook")
                 .set("x-paystack-signature", signature)
                 .send(webhookPayload);
             expect(res.statusCode).toEqual(200);
             expect(res.body).toHaveProperty("success", true);
             expect(res.body.message).toContain("Event received, no action taken.");
-        }));
-        it("should handle malformed webhook data", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should handle malformed webhook data", async () => {
             const malformedPayload = {
                 // Missing required fields
                 event: "charge.success",
             };
             const signature = createWebhookSignature(malformedPayload);
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/paystack/webhook")
                 .set("x-paystack-signature", signature)
                 .send(malformedPayload);
             // Should return 200 for malformed data (webhook still processed successfully)
             expect(res.statusCode).toEqual(200);
-        }));
+        });
     });
     describe("Webhook Security", () => {
-        it("should handle multiple signature formats", () => __awaiter(void 0, void 0, void 0, function* () {
+        it("should handle multiple signature formats", async () => {
             const webhookPayload = {
                 event: "charge.success",
                 data: {
@@ -269,7 +260,7 @@ describe("Paystack Endpoints", () => {
                 signature.toUpperCase(),
             ];
             for (const sig of formats) {
-                const res = yield (0, supertest_1.default)(server_1.default)
+                const res = await (0, supertest_1.default)(server_1.default)
                     .post("/api/paystack/webhook")
                     .set("x-paystack-signature", sig)
                     .send(webhookPayload);
@@ -281,17 +272,17 @@ describe("Paystack Endpoints", () => {
                     expect(res.statusCode).toEqual(403);
                 }
             }
-        }));
-        it("should handle empty payload", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should handle empty payload", async () => {
             const emptyPayload = {};
             const signature = createWebhookSignature(emptyPayload);
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/paystack/webhook")
                 .set("x-paystack-signature", signature)
                 .send(emptyPayload);
             expect(res.statusCode).toEqual(200);
-        }));
-        it("should handle very large payloads", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should handle very large payloads", async () => {
             const largePayload = {
                 event: "charge.success",
                 data: {
@@ -303,11 +294,11 @@ describe("Paystack Endpoints", () => {
                 },
             };
             const signature = createWebhookSignature(largePayload);
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/paystack/webhook")
                 .set("x-paystack-signature", signature)
                 .send(largePayload);
             expect(res.statusCode).toEqual(200);
-        }));
+        });
     });
 });

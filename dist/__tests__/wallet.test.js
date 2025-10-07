@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -26,7 +17,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "test-secret";
 describe("Wallet Endpoints", () => {
     let userToken;
     let userId;
-    beforeEach(() => __awaiter(void 0, void 0, void 0, function* () {
+    beforeEach(async () => {
         // Reset all mocks
         jest.clearAllMocks();
         // Setup Paystack API mocks
@@ -104,11 +95,11 @@ describe("Wallet Endpoints", () => {
             return Promise.reject(new Error("Unknown endpoint"));
         });
         // Clean up test data before each test (order matters for foreign keys)
-        yield userService_1.prisma.transaction.deleteMany({});
-        yield userService_1.prisma.loan.deleteMany({});
-        yield userService_1.prisma.user.deleteMany({});
+        await userService_1.prisma.transaction.deleteMany({});
+        await userService_1.prisma.loan.deleteMany({});
+        await userService_1.prisma.user.deleteMany({});
         // Create test user
-        const user = yield userService_1.prisma.user.create({
+        const user = await userService_1.prisma.user.create({
             data: {
                 email: "wallet-user@test.com",
                 password: "hashedpassword",
@@ -124,31 +115,31 @@ describe("Wallet Endpoints", () => {
         // Generate JWT token
         userToken = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role }, JWT_SECRET);
         // Wait a bit to ensure setup is complete
-        yield new Promise((resolve) => setTimeout(resolve, 100));
-    }));
-    afterAll(() => __awaiter(void 0, void 0, void 0, function* () {
-        yield userService_1.prisma.$disconnect();
-    }));
+        await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+    afterAll(async () => {
+        await userService_1.prisma.$disconnect();
+    });
     describe("POST /api/wallet/deposit", () => {
         const validDepositData = {
             amount: 10000,
             reference: "ref_test123456",
         };
-        it("should deposit funds successfully", () => __awaiter(void 0, void 0, void 0, function* () {
-            const res = yield (0, supertest_1.default)(server_1.default)
+        it("should deposit funds successfully", async () => {
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/deposit")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(validDepositData);
             expect(res.statusCode).toEqual(200);
             expect(res.body).toHaveProperty("success", true);
             expect(res.body).toHaveProperty("message", "Wallet funded successfully.");
-        }));
-        it("should validate required fields", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should validate required fields", async () => {
             const invalidData = {
                 amount: 10000,
                 // Missing reference
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/deposit")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(invalidData);
@@ -156,64 +147,64 @@ describe("Wallet Endpoints", () => {
             expect(res.body).toHaveProperty("success", false);
             expect(res.body.message).toContain("Validation failed for fields: reference");
             expect(res.body.message).toContain("reference is required and cannot be empty");
-        }));
-        it("should reject negative amounts", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should reject negative amounts", async () => {
             const invalidData = {
                 amount: -1000,
                 reference: "ref_negative",
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/deposit")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(invalidData);
             expect(res.statusCode).toEqual(400);
             expect(res.body).toHaveProperty("success", false);
-        }));
-        it("should reject zero amounts", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should reject zero amounts", async () => {
             const invalidData = {
                 amount: 0,
                 reference: "ref_zero",
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/deposit")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(invalidData);
             expect(res.statusCode).toEqual(400);
             expect(res.body).toHaveProperty("success", false);
-        }));
-        it("should reject non-numeric amounts", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should reject non-numeric amounts", async () => {
             const invalidData = {
                 amount: "not-a-number",
                 reference: "ref_invalid",
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/deposit")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(invalidData);
             expect(res.statusCode).toEqual(400);
             expect(res.body).toHaveProperty("success", false);
-        }));
-        it("should prevent duplicate transaction references", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should prevent duplicate transaction references", async () => {
             // First deposit
-            yield (0, supertest_1.default)(server_1.default)
+            await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/deposit")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(validDepositData);
             // Try to use same reference again
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/deposit")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(validDepositData);
             expect(res.statusCode).toEqual(400);
             expect(res.body).toHaveProperty("success", false);
-        }));
-        it("should require authentication", () => __awaiter(void 0, void 0, void 0, function* () {
-            const res = yield (0, supertest_1.default)(server_1.default)
+        });
+        it("should require authentication", async () => {
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/deposit")
                 .send(validDepositData);
             expect(res.statusCode).toEqual(401);
             expect(res.body).toHaveProperty("success", false);
-        }));
+        });
     });
     describe("POST /api/wallet/withdraw", () => {
         const validWithdrawData = {
@@ -221,137 +212,137 @@ describe("Wallet Endpoints", () => {
             accountNumber: "0123456789",
             bankCode: "058",
         };
-        it("should initiate withdrawal successfully", () => __awaiter(void 0, void 0, void 0, function* () {
-            const res = yield (0, supertest_1.default)(server_1.default)
+        it("should initiate withdrawal successfully", async () => {
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/withdraw")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(validWithdrawData);
             expect(res.statusCode).toEqual(200);
             expect(res.body).toHaveProperty("success", true);
-        }));
-        it("should validate required fields", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should validate required fields", async () => {
             const invalidData = {
                 amount: 5000,
                 // Missing accountNumber and bankCode
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/withdraw")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(invalidData);
             expect(res.statusCode).toEqual(400);
             expect(res.body).toHaveProperty("success", false);
-        }));
-        it("should reject negative amounts", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should reject negative amounts", async () => {
             const invalidData = {
                 amount: -1000,
                 accountNumber: "0123456789",
                 bankCode: "058",
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/withdraw")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(invalidData);
             expect(res.statusCode).toEqual(400);
             expect(res.body).toHaveProperty("success", false);
-        }));
-        it("should reject withdrawal exceeding balance", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should reject withdrawal exceeding balance", async () => {
             const excessiveAmount = {
                 amount: 100000, // More than the user's balance (50000)
                 accountNumber: "0123456789",
                 bankCode: "058",
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/withdraw")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(excessiveAmount);
             expect(res.statusCode).toEqual(400);
             expect(res.body).toHaveProperty("success", false);
             expect(res.body.message).toContain("Insufficient funds in wallet");
-        }));
-        it("should validate account number format", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should validate account number format", async () => {
             const invalidAccount = {
                 amount: 5000,
                 accountNumber: "123", // Too short
                 bankCode: "058",
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/withdraw")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(invalidAccount);
             expect(res.statusCode).toEqual(400);
             expect(res.body).toHaveProperty("success", false);
-        }));
-        it("should validate bank code format", () => __awaiter(void 0, void 0, void 0, function* () {
+        });
+        it("should validate bank code format", async () => {
             const invalidBankCode = {
                 amount: 5000,
                 accountNumber: "0123456789",
                 bankCode: "99", // Invalid bank code
             };
-            const res = yield (0, supertest_1.default)(server_1.default)
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/withdraw")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(invalidBankCode);
             expect(res.statusCode).toEqual(400);
             expect(res.body).toHaveProperty("success", false);
-        }));
-        it("should require authentication", () => __awaiter(void 0, void 0, void 0, function* () {
-            const res = yield (0, supertest_1.default)(server_1.default)
+        });
+        it("should require authentication", async () => {
+            const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/withdraw")
                 .send(validWithdrawData);
             expect(res.statusCode).toEqual(401);
             expect(res.body).toHaveProperty("success", false);
-        }));
+        });
     });
     describe("Wallet Balance Updates", () => {
-        it("should update user balance after deposit", () => __awaiter(void 0, void 0, void 0, function* () {
+        it("should update user balance after deposit", async () => {
             const depositData = {
                 amount: 15000,
                 reference: "ref_balance_test",
             };
-            yield (0, supertest_1.default)(server_1.default)
+            await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/deposit")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(depositData);
             // Check if balance was updated
-            const user = yield userService_1.prisma.user.findUnique({
+            const user = await userService_1.prisma.user.findUnique({
                 where: { id: userId },
                 select: { availableBalance: true },
             });
-            expect(user === null || user === void 0 ? void 0 : user.availableBalance.toNumber()).toEqual(65000); // 50000 + 15000
-        }));
-        it("should update user balance after withdrawal", () => __awaiter(void 0, void 0, void 0, function* () {
+            expect(user?.availableBalance.toNumber()).toEqual(65000); // 50000 + 15000
+        });
+        it("should update user balance after withdrawal", async () => {
             const withdrawData = {
                 amount: 10000,
                 accountNumber: "0123456789",
                 bankCode: "058",
             };
-            yield (0, supertest_1.default)(server_1.default)
+            await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/withdraw")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(withdrawData);
             // Check if balance was updated
-            const user = yield userService_1.prisma.user.findUnique({
+            const user = await userService_1.prisma.user.findUnique({
                 where: { id: userId },
                 select: { availableBalance: true },
             });
-            expect(user === null || user === void 0 ? void 0 : user.availableBalance.toNumber()).toEqual(40000); // 50000 - 10000
-        }));
-        it("should create transaction records", () => __awaiter(void 0, void 0, void 0, function* () {
+            expect(user?.availableBalance.toNumber()).toEqual(40000); // 50000 - 10000
+        });
+        it("should create transaction records", async () => {
             const depositData = {
                 amount: 7500,
                 reference: "ref_transaction_test",
             };
-            yield (0, supertest_1.default)(server_1.default)
+            await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/deposit")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(depositData);
             // Check if transaction was recorded
-            const transactions = yield userService_1.prisma.transaction.findMany({
+            const transactions = await userService_1.prisma.transaction.findMany({
                 where: { userId: userId },
             });
             expect(transactions).toHaveLength(1);
             expect(transactions[0].amount.toNumber()).toEqual(7500);
             expect(transactions[0].type).toEqual("DEPOSIT");
-        }));
+        });
     });
 });

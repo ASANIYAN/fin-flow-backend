@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -19,8 +10,8 @@ const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 exports.prisma = prisma;
 const saltRounds = 10;
-const createUser = (email, password, firstName, lastName, role) => __awaiter(void 0, void 0, void 0, function* () {
-    const hashedPassword = yield bcrypt_1.default.hash(password, saltRounds);
+const createUser = async (email, password, firstName, lastName, role) => {
+    const hashedPassword = await bcrypt_1.default.hash(password, saltRounds);
     const verificationToken = crypto_1.default.randomBytes(32).toString("hex");
     return prisma.user.create({
         data: {
@@ -32,17 +23,17 @@ const createUser = (email, password, firstName, lastName, role) => __awaiter(voi
             verificationToken,
         },
     });
-});
+};
 exports.createUser = createUser;
-const findUserByVerificationToken = (token) => __awaiter(void 0, void 0, void 0, function* () {
+const findUserByVerificationToken = async (token) => {
     return prisma.user.findUnique({
         where: {
             verificationToken: token,
         },
     });
-});
+};
 exports.findUserByVerificationToken = findUserByVerificationToken;
-const verifyUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+const verifyUser = async (userId) => {
     return prisma.user.update({
         where: {
             id: userId,
@@ -53,17 +44,17 @@ const verifyUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
             verificationToken: null, // Remove the token after successful verification
         },
     });
-});
+};
 exports.verifyUser = verifyUser;
-const findUserByEmail = (email) => __awaiter(void 0, void 0, void 0, function* () {
+const findUserByEmail = async (email) => {
     return prisma.user.findUnique({
         where: {
             email,
         },
     });
-});
+};
 exports.findUserByEmail = findUserByEmail;
-const findUserById = (id) => __awaiter(void 0, void 0, void 0, function* () {
+const findUserById = async (id) => {
     return prisma.user.findUnique({
         where: {
             id,
@@ -83,14 +74,14 @@ const findUserById = (id) => __awaiter(void 0, void 0, void 0, function* () {
             updatedAt: true,
         },
     });
-});
+};
 exports.findUserById = findUserById;
-const comparePasswords = (password, hashedPassword) => __awaiter(void 0, void 0, void 0, function* () {
+const comparePasswords = async (password, hashedPassword) => {
     return bcrypt_1.default.compare(password, hashedPassword);
-});
+};
 exports.comparePasswords = comparePasswords;
-const generatePasswordResetToken = (email) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = yield (0, exports.findUserByEmail)(email);
+const generatePasswordResetToken = async (email) => {
+    const user = await (0, exports.findUserByEmail)(email);
     // Security best practice: Do not reveal if the user exists or not
     if (!user) {
         return null;
@@ -98,7 +89,7 @@ const generatePasswordResetToken = (email) => __awaiter(void 0, void 0, void 0, 
     // Generate a secure, URL-safe token
     const resetToken = crypto_1.default.randomBytes(32).toString("hex");
     const resetTokenExpires = new Date(Date.now() + 3600000); // 1 hour
-    yield prisma.user.update({
+    await prisma.user.update({
         where: { id: user.id },
         data: {
             resetPasswordToken: resetToken,
@@ -106,11 +97,11 @@ const generatePasswordResetToken = (email) => __awaiter(void 0, void 0, void 0, 
         },
     });
     return resetToken;
-});
+};
 exports.generatePasswordResetToken = generatePasswordResetToken;
-const resetUserPassword = (token, newPassword) => __awaiter(void 0, void 0, void 0, function* () {
-    const hashedPassword = yield bcrypt_1.default.hash(newPassword, saltRounds);
-    const user = yield prisma.user.findFirst({
+const resetUserPassword = async (token, newPassword) => {
+    const hashedPassword = await bcrypt_1.default.hash(newPassword, saltRounds);
+    const user = await prisma.user.findFirst({
         where: {
             resetPasswordToken: token,
             resetPasswordExpires: { gt: new Date() }, // Check if token has not expired
@@ -119,7 +110,7 @@ const resetUserPassword = (token, newPassword) => __awaiter(void 0, void 0, void
     if (!user) {
         return null;
     }
-    yield prisma.user.update({
+    await prisma.user.update({
         where: { id: user.id },
         data: {
             password: hashedPassword,
@@ -128,11 +119,10 @@ const resetUserPassword = (token, newPassword) => __awaiter(void 0, void 0, void
         },
     });
     return user;
-});
+};
 exports.resetUserPassword = resetUserPassword;
-const getUserProfileService = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
-    const user = yield prisma.user.findUnique({
+const getUserProfileService = async (userId) => {
+    const user = await prisma.user.findUnique({
         where: {
             id: userId,
         },
@@ -149,10 +139,14 @@ const getUserProfileService = (userId) => __awaiter(void 0, void 0, void 0, func
             createdAt: true,
         },
     });
-    return Object.assign(Object.assign({}, user), { availableBalance: parseFloat(((_a = user === null || user === void 0 ? void 0 : user.availableBalance) !== null && _a !== void 0 ? _a : "0").toString()), escrowBalance: parseFloat(((_b = user === null || user === void 0 ? void 0 : user.escrowBalance) !== null && _b !== void 0 ? _b : "0").toString()) });
-});
+    return {
+        ...user,
+        availableBalance: parseFloat((user?.availableBalance ?? "0").toString()),
+        escrowBalance: parseFloat((user?.escrowBalance ?? "0").toString()),
+    };
+};
 exports.getUserProfileService = getUserProfileService;
-const updateUserProfileService = (userId, updateData) => __awaiter(void 0, void 0, void 0, function* () {
+const updateUserProfileService = async (userId, updateData) => {
     // You should validate updateData here to ensure a user can only update
     // specific fields (e.g., firstName, lastName) and not sensitive ones like
     // email or password without proper verification.
@@ -165,7 +159,7 @@ const updateUserProfileService = (userId, updateData) => __awaiter(void 0, void 
     if (Object.keys(validUpdateFields).length === 0) {
         throw new Error("No valid fields provided for update.");
     }
-    const updatedUser = yield prisma.user.update({
+    const updatedUser = await prisma.user.update({
         where: {
             id: userId,
         },
@@ -181,9 +175,9 @@ const updateUserProfileService = (userId, updateData) => __awaiter(void 0, void 
         },
     });
     return updatedUser;
-});
+};
 exports.updateUserProfileService = updateUserProfileService;
-const getUserTransactionsService = (userId_1, ...args_1) => __awaiter(void 0, [userId_1, ...args_1], void 0, function* (userId, page = 1, pageSize = 10, q) {
+const getUserTransactionsService = async (userId, page = 1, pageSize = 10, q) => {
     // Calculate skip for pagination
     const skip = (page - 1) * pageSize;
     // Build the dynamic 'where' clause for filtering and searching
@@ -212,7 +206,7 @@ const getUserTransactionsService = (userId_1, ...args_1) => __awaiter(void 0, [u
         where.OR = orConditions;
     }
     // Fetch the paginated and filtered transactions
-    const transactions = yield prisma.transaction.findMany({
+    const transactions = await prisma.transaction.findMany({
         where,
         skip,
         take: pageSize,
@@ -229,8 +223,8 @@ const getUserTransactionsService = (userId_1, ...args_1) => __awaiter(void 0, [u
         },
     });
     // Get the total count of transactions for pagination (without skip/take)
-    const totalCount = yield prisma.transaction.count({ where });
+    const totalCount = await prisma.transaction.count({ where });
     const totalPages = Math.ceil(totalCount / pageSize);
     return { transactions, totalCount, totalPages };
-});
+};
 exports.getUserTransactionsService = getUserTransactionsService;
