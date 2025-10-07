@@ -73,6 +73,17 @@ export const confirmDepositAttemptService = async (
   amount: number,
   reference: string
 ) => {
+  // First check if this reference has already been processed
+  const existingTransaction = await prisma.transaction.findUnique({
+    where: {
+      externalRef: reference,
+    },
+  });
+
+  if (existingTransaction) {
+    throw new Error("Transaction reference has already been processed");
+  }
+
   const MAX_RETRIES = 3; // Maximum attempts
   let currentRetry = 0;
 

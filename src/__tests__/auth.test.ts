@@ -57,7 +57,7 @@ describe("Authentication Endpoints", () => {
       role: "LENDER",
     });
     expect(res.statusCode).toEqual(409);
-    expect(res.body).toHaveProperty("error", "Email already in use");
+    expect(res.body).toHaveProperty("message", "Email already in use");
   });
 
   it("should log in a user successfully", async () => {
@@ -99,7 +99,7 @@ describe("Authentication Endpoints", () => {
       password: "wrong_password",
     });
     expect(res.statusCode).toEqual(401);
-    expect(res.body).toHaveProperty("error", "Invalid email or password");
+    expect(res.body).toHaveProperty("message", "Invalid email or password");
   });
 
   it("should not allow login with unverified email", async () => {
@@ -121,7 +121,7 @@ describe("Authentication Endpoints", () => {
 
     expect(res.statusCode).toEqual(403);
     expect(res.body).toHaveProperty(
-      "error",
+      "message",
       "Please verify your email address before logging in"
     );
   });
