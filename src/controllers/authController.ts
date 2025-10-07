@@ -2,10 +2,7 @@ import jwt from "jsonwebtoken";
 import { Request, Response } from "express";
 
 // Import Prisma for error handling - use the main client types since they're the same
-const Prisma =
-  process.env.NODE_ENV === "test"
-    ? require("../../generated/prisma-test").Prisma
-    : require("../../generated/prisma").Prisma;
+
 import { successResponse, errorResponse } from "../utils/message";
 import { sendEmail } from "../utils/emailService";
 import {
@@ -18,7 +15,8 @@ import {
   verifyUser,
 } from "../services/userService";
 import { validateAndRespond, ValidationSchema } from "../utils/validation";
-import { Role } from "@prisma/client";
+
+import { Role, Prisma } from "../lib/prisma";
 
 interface SignupRequestBody {
   role: Role;

@@ -11,7 +11,7 @@ import {
   fundLoan,
   getOpenLoans,
 } from "../controllers/loanController";
-import { Role } from "@prisma/client";
+import { Role } from "../lib/prisma";
 
 const router = Router();
 

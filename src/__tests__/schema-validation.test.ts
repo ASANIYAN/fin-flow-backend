@@ -1,6 +1,6 @@
 // src/__tests__/schema-validation.test.ts
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../lib/prisma";
 import * as fs from "fs";
 import * as path from "path";
 

@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { errorResponse } from "../utils/message";
 import { Request, Response, NextFunction } from "express";
 import { AuthenticatedRequest, JWTPayload, AuthErrorType } from "../types/auth";
-import { Role } from "@prisma/client";
+import { Role } from "../lib/prisma";
 
 // Configuration validation - fail fast if JWT_SECRET is not defined
 const JWT_SECRET = process.env.JWT_SECRET;
