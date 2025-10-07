@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { depositFunds, withdrawFunds } from "../controllers/walletController";
 import { authenticateToken, requireRole } from "../middleware/authMiddleware";
-import { Role } from "../lib/prisma";
+import { Role } from "@prisma/client";
 
 const router = Router();
 

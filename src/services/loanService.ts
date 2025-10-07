@@ -4,7 +4,8 @@ import {
   LoanStatus,
   TransactionType,
   DurationUnit,
-} from "../lib/prisma";
+} from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/library";
 
 // Utility function to convert duration to days for consistent calculations
 const convertDurationToDays = (duration: number, unit: string): number => {
@@ -141,7 +142,7 @@ const formatBorrowerName = (firstName: string, lastName: string): string => {
 };
 
 const convertDecimalToNumber = (
-  decimal: Prisma.Decimal | number | null | undefined
+  decimal: Decimal | number | null | undefined
 ): number => {
   if (decimal && typeof decimal === "object" && "toNumber" in decimal) {
     return decimal.toNumber();
@@ -173,9 +174,9 @@ const getActiveLoansByBorrower = async (
     id: string;
     title: string;
     description: string | null;
-    amountRequested: Prisma.Decimal;
-    amountFunded: Prisma.Decimal;
-    interestRate: Prisma.Decimal;
+    amountRequested: Decimal;
+    amountFunded: Decimal;
+    interestRate: Decimal;
     duration: number;
     status: LoanStatus;
     createdAt: Date;
@@ -197,8 +198,8 @@ const getInvestmentsByLender = async (
   lenderId: string
 ): Promise<
   Array<{
-    amountFunded: Prisma.Decimal;
-    interestRate: Prisma.Decimal;
+    amountFunded: Decimal;
+    interestRate: Decimal;
   }>
 > => {
   return prisma.loan.findMany({
@@ -221,9 +222,9 @@ const getRecentLoanListings = async (
     id: string;
     title: string;
     description: string | null;
-    amountRequested: Prisma.Decimal;
-    amountFunded: Prisma.Decimal;
-    interestRate: Prisma.Decimal;
+    amountRequested: Decimal;
+    amountFunded: Decimal;
+    interestRate: Decimal;
     duration: number;
     status: LoanStatus;
     createdAt: Date;
@@ -252,8 +253,8 @@ const getRecentLoanListings = async (
 
 const calculateInvestmentSummary = (
   investments: Array<{
-    amountFunded: Prisma.Decimal;
-    interestRate: Prisma.Decimal;
+    amountFunded: Decimal;
+    interestRate: Decimal;
   }>
 ): InvestmentSummary => {
   const totalInvested = investments.reduce(
@@ -277,9 +278,9 @@ const formatLoanListings = (
     id: string;
     title: string;
     description: string | null;
-    amountRequested: Prisma.Decimal;
-    amountFunded: Prisma.Decimal;
-    interestRate: Prisma.Decimal;
+    amountRequested: Decimal;
+    amountFunded: Decimal;
+    interestRate: Decimal;
     duration: number;
     status: LoanStatus;
     createdAt: Date;
@@ -296,9 +297,9 @@ const formatLoanListings = (
       id: string;
       title: string;
       description: string | null;
-      amountRequested: Prisma.Decimal;
-      amountFunded: Prisma.Decimal;
-      interestRate: Prisma.Decimal;
+      amountRequested: Decimal;
+      amountFunded: Decimal;
+      interestRate: Decimal;
       duration: number;
       status: LoanStatus;
       createdAt: Date;
@@ -343,7 +344,7 @@ export const createLoanService = async (loanData: CreateLoanInput) => {
     durationUnit
   );
 
-  const prismaLoanData: Prisma.LoanCreateInput = {
+  const prismaLoanData = {
     title: loanData.title,
     description: loanData.description,
     amountRequested: loanData.amountRequested,
@@ -668,9 +669,9 @@ export const getAllLoansByBorrower = async (
       id: string;
       title: string;
       description: string | null;
-      amountRequested: Prisma.Decimal;
-      amountFunded: Prisma.Decimal;
-      interestRate: Prisma.Decimal;
+      amountRequested: Decimal;
+      amountFunded: Decimal;
+      interestRate: Decimal;
       duration: number;
       status: LoanStatus;
       createdAt: Date;
@@ -723,7 +724,7 @@ export const disburseLoanService = async (loanId: string) => {
     const lenderCommitments = fundingTransactions.reduce(
       (
         acc: Record<string, number>,
-        tx: { userId: string | null; amount: Prisma.Decimal }
+        tx: { userId: string | null; amount: Decimal }
       ) => {
         acc[tx.userId!] = (acc[tx.userId!] || 0) + tx.amount.toNumber();
         return acc;
@@ -890,7 +891,7 @@ export const repayLoanService = async (
     const lenderContributions = fundingTransactions.reduce(
       (
         acc: Record<string, number>,
-        tx: { userId: string | null; amount: Prisma.Decimal }
+        tx: { userId: string | null; amount: Decimal }
       ) => {
         acc[tx.userId!] = (acc[tx.userId!] || 0) + tx.amount.toNumber();
         return acc;

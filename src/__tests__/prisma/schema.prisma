@@ -3,6 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  output = "../../../generated/prisma-test"
 }
 
 // Test database - uses SQLite for fast, isolated testing
@@ -24,9 +25,14 @@ model User {
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
   
-  // ESCROW IMPLEMENTATION: Explicit balances
+ 
   availableBalance Decimal     @default(0) // Funds ready for use/withdrawal
   escrowBalance    Decimal     @default(0) // Funds committed to PENDING/FUNDING loans
+
+    // Security Fields
+  // It is optional (`?`) because it is null when not in use.
+  resetPasswordToken    String?       @unique
+  resetPasswordExpires  DateTime?
 
   loanApplications Loan[]
   fundedLoans      Loan[]      @relation("FundedLoans")
@@ -97,7 +103,7 @@ enum LoanStatus {
   FUNDING         // Less than 100% funded
   FULLY_FUNDED    // 100% funded, waiting for disbursement approval
   ACTIVE          // Funds disbursed, repayment period begins
-  REPAID          // Final status: Repaid (our new preferred name)
+  REPAID          // Final status: Repaid
 }
 
 enum DurationUnit {
