@@ -3,10 +3,7 @@ import {
   TransactionType,
   DurationUnit,
 } from "../../node_modules/.prisma/client";
-import {
-  PrismaClient,
-  Prisma,
-} from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
 
 // Utility function to convert duration to days for consistent calculations
