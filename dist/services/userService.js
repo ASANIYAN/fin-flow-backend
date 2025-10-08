@@ -10,7 +10,7 @@ const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 exports.prisma = prisma;
 const saltRounds = 10;
-const createUser = async (email, password, firstName, lastName, role) => {
+const createUser = async (email, password, firstName, lastName) => {
     const hashedPassword = await bcrypt_1.default.hash(password, saltRounds);
     const verificationToken = crypto_1.default.randomBytes(32).toString("hex");
     return prisma.user.create({
@@ -19,7 +19,6 @@ const createUser = async (email, password, firstName, lastName, role) => {
             password: hashedPassword,
             firstName,
             lastName,
-            role,
             verificationToken,
         },
     });
@@ -132,7 +131,6 @@ const getUserProfileService = async (userId) => {
             email: true,
             firstName: true,
             lastName: true,
-            role: true,
             isEmailVerified: true,
             availableBalance: true,
             escrowBalance: true,
@@ -169,7 +167,6 @@ const updateUserProfileService = async (userId, updateData) => {
             email: true,
             firstName: true,
             lastName: true,
-            role: true,
             isEmailVerified: true,
             createdAt: true,
         },

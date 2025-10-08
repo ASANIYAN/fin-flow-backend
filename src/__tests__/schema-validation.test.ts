@@ -24,7 +24,6 @@ describe("Schema Field Validation Tests", () => {
         firstName: "string",
         lastName: "string",
         password: "string",
-        role: "Role",
         isEmailVerified: "boolean",
         emailVerifiedAt: "DateTime?",
         verificationToken: "string?",
@@ -43,7 +42,6 @@ describe("Schema Field Validation Tests", () => {
             firstName: true,
             lastName: true,
             password: true,
-            role: true,
             isEmailVerified: true,
             emailVerifiedAt: true,
             verificationToken: true,
@@ -64,7 +62,6 @@ describe("Schema Field Validation Tests", () => {
         firstName: "Schema",
         lastName: "Test",
         password: "hashedPassword",
-        role: "BORROWER" as const,
         verificationToken: "test-token-123",
       };
 
@@ -198,7 +195,6 @@ describe("Schema Field Validation Tests", () => {
             password: "hashed",
             firstName: "Test",
             lastName: "User",
-            role: "BORROWER",
             verificationToken: "token",
           },
         });
@@ -301,22 +297,6 @@ describe("Schema Field Validation Tests", () => {
     });
 
     test("should have all enum values used in code", () => {
-      // Test Role enum values
-      const roles = ["BORROWER", "LENDER"];
-      roles.forEach((role) => {
-        expect(() => {
-          prisma.user.create({
-            data: {
-              email: "test@example.com",
-              password: "hashed",
-              firstName: "Test",
-              lastName: "User",
-              role: role as any,
-            },
-          });
-        }).not.toThrow();
-      });
-
       // Test LoanStatus enum values
       const loanStatuses = ["PENDING", "FUNDING", "FUNDED", "REPAID"];
       loanStatuses.forEach((status) => {

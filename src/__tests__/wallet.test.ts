@@ -114,7 +114,6 @@ describe("Wallet Endpoints", () => {
         password: "hashedpassword",
         firstName: "Wallet",
         lastName: "User",
-        role: "LENDER",
         isEmailVerified: true,
         availableBalance: 50000, // Starting balance
         escrowBalance: 0,
@@ -124,7 +123,7 @@ describe("Wallet Endpoints", () => {
     userId = user.id;
 
     // Generate JWT token
-    userToken = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET);
+    userToken = jwt.sign({ userId: user.id }, JWT_SECRET);
 
     // Wait a bit to ensure setup is complete
     await new Promise((resolve) => setTimeout(resolve, 100));

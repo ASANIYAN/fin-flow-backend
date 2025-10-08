@@ -3,254 +3,32 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const authMiddleware_1 = require("../middleware/authMiddleware");
 const loanController_1 = require("../controllers/loanController");
-const client_1 = require("../../node_modules/.prisma/client");
 const router = (0, express_1.Router)();
 /**
  * @swagger
  * /api/loans/dashboard:
  *   get:
- *     summary: Get dashboard data for borrower or lender
+ *     summary: Get unified dashboard data for P2P lending
+ *     description: Returns comprehensive dashboard showing both borrower and lender activities for the authenticated user
  *     tags: [Loans]
  *     security:
  *       - BearerAuth: []
  *     responses:
  *       200:
- *         description: Dashboard data retrieved successfully
+ *         description: Unified dashboard data retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               oneOf:
- *                 - $ref: '#/components/schemas/BorrowerDashboard'
- *                 - $ref: '#/components/schemas/LenderDashboard'
- *                 - type: object
- *                   title: Borrower Dashboard Response
- *                   properties:
- *                     success:
- *                       type: boolean
- *                       example: true
- *                     message:
- *                       type: string
- *                       example: "Borrower dashboard data fetched successfully"
- *                     data:
- *                       type: object
- *                       properties:
- *                         totalApplications:
- *                           type: integer
- *                           description: Total number of loan applications submitted by borrower
- *                           example: 5
- *                         pendingApplications:
- *                           type: integer
- *                           description: Number of loan applications awaiting approval or funding
- *                           example: 2
- *                         activeLoans:
- *                           type: array
- *                           description: List of currently active loans (funded or being funded)
- *                           items:
- *                             type: object
- *                             properties:
- *                               id:
- *                                 type: string
- *                                 example: "123e4567-e89b-12d3-a456-426614174001"
- *                               title:
- *                                 type: string
- *                                 example: "Business Expansion Loan"
- *                               description:
- *                                 type: string
- *                                 nullable: true
- *                                 example: "Loan for expanding my restaurant business"
- *                               amountRequested:
- *                                 type: number
- *                                 format: decimal
- *                                 example: 50000
- *                               amountFunded:
- *                                 type: number
- *                                 format: decimal
- *                                 example: 35000
- *                               interestRate:
- *                                 type: number
- *                                 format: decimal
- *                                 example: 12.5
- *                               duration:
- *                                 type: integer
- *                                 description: Loan duration in months
- *                                 example: 24
- *                               status:
- *                                 type: string
- *                                 enum: [PENDING, FUNDING, FULLY_FUNDED, ACTIVE, REPAID]
- *                                 example: "FUNDING"
- *                               createdAt:
- *                                 type: string
- *                                 format: date-time
- *                                 example: "2024-09-15T10:30:00.000Z"
- *                               updatedAt:
- *                                 type: string
- *                                 format: date-time
- *                                 example: "2024-09-20T14:15:00.000Z"
- *                 - type: object
- *                   title: Lender Dashboard Response
- *                   properties:
- *                     success:
- *                       type: boolean
- *                       example: true
- *                     message:
- *                       type: string
- *                       example: "Lender dashboard data fetched successfully"
- *                     data:
- *                       type: object
- *                       properties:
- *                         investmentSummary:
- *                           type: object
- *                           description: Summary of lender's investment portfolio
- *                           properties:
- *                             totalInvested:
- *                               type: number
- *                               format: decimal
- *                               description: Total amount invested across all loans
- *                               example: 150000
- *                             totalEarnings:
- *                               type: number
- *                               format: decimal
- *                               description: Total estimated earnings from investments
- *                               example: 7500
- *                             activeInvestments:
- *                               type: integer
- *                               description: Number of active loan investments
- *                               example: 8
- *                         newListings:
- *                           type: array
- *                           description: Recent loan listings available for funding
- *                           items:
- *                             type: object
- *                             properties:
- *                               id:
- *                                 type: string
- *                                 example: "456f7890-e12c-34d5-b678-901234567890"
- *                               title:
- *                                 type: string
- *                                 example: "Agricultural Equipment Purchase"
- *                               description:
- *                                 type: string
- *                                 nullable: true
- *                                 example: "Need funds to purchase farming equipment"
- *                               amountRequested:
- *                                 type: number
- *                                 format: decimal
- *                                 example: 75000
- *                               amountFunded:
- *                                 type: number
- *                                 format: decimal
- *                                 example: 0
- *                               interestRate:
- *                                 type: number
- *                                 format: decimal
- *                                 example: 15.0
- *                               duration:
- *                                 type: integer
- *                                 description: Loan duration in months
- *                                 example: 18
- *                               status:
- *                                 type: string
- *                                 enum: [PENDING, FUNDING, FULLY_FUNDED, ACTIVE, REPAID]
- *                                 example: "PENDING"
- *                               borrower:
- *                                 type: string
- *                                 description: Borrower's full name
- *                                 example: "John Smith"
- *                               progress:
- *                                 type: number
- *                                 format: decimal
- *                                 description: Funding progress percentage (0-100)
- *                                 example: 0
- *                               createdAt:
- *                                 type: string
- *                                 format: date-time
- *                                 example: "2024-09-22T08:45:00.000Z"
- *             examples:
- *               borrower:
- *                 summary: Borrower Dashboard Response
- *                 description: Response when user has BORROWER role
- *                 value:
- *                   success: true
- *                   message: "Borrower dashboard data fetched successfully"
- *                   data:
- *                     totalApplications: 5
- *                     pendingApplications: 2
- *                     activeLoans:
- *                       - id: "123e4567-e89b-12d3-a456-426614174001"
- *                         title: "Business Expansion Loan"
- *                         description: "Loan for expanding my restaurant business"
- *                         amountRequested: 50000
- *                         amountFunded: 35000
- *                         interestRate: 12.5
- *                         duration: 24
- *                         durationUnit: "MONTHS"
- *                         totalInterest: 12500.0
- *                         status: "FUNDING"
- *                         createdAt: "2024-09-15T10:30:00.000Z"
- *                         updatedAt: "2024-09-20T14:15:00.000Z"
- *                       - id: "987f6543-e21d-34c5-b678-123456789012"
- *                         title: "Equipment Purchase"
- *                         description: "New machinery for production line"
- *                         amountRequested: 75000
- *                         amountFunded: 75000
- *                         interestRate: 10.0
- *                         duration: 36
- *                         durationUnit: "MONTHS"
- *                         totalInterest: 22500.0
- *                         status: "FULLY_FUNDED"
- *                         createdAt: "2024-08-20T09:15:00.000Z"
- *                         updatedAt: "2024-09-10T16:45:00.000Z"
- *               lender:
- *                 summary: Lender Dashboard Response
- *                 description: Response when user has LENDER role
- *                 value:
- *                   success: true
- *                   message: "Lender dashboard data fetched successfully"
- *                   data:
- *                     investmentSummary:
- *                       totalInvested: 150000
- *                       totalEarnings: 7500
- *                       activeInvestments: 8
- *                     newListings:
- *                       - id: "456f7890-e12c-34d5-b678-901234567890"
- *                         title: "Agricultural Equipment Purchase"
- *                         description: "Need funds to purchase farming equipment"
- *                         amountRequested: 75000
- *                         amountFunded: 0
- *                         interestRate: 15.0
- *                         duration: 18
- *                         durationUnit: "MONTHS"
- *                         totalInterest: 16875.0
- *                         status: "PENDING"
- *                         borrower: "John Smith"
- *                         progress: 0
- *                         createdAt: "2024-09-22T08:45:00.000Z"
- *                       - id: "789a1234-f56g-78h9-i012-345678901234"
- *                         title: "Small Business Startup"
- *                         description: "Launch a local bakery business"
- *                         amountRequested: 25000
- *                         amountFunded: 15000
- *                         interestRate: 18.5
- *                         duration: 12
- *                         durationUnit: "WEEKS"
- *                         totalInterest: 1067.31
- *                         status: "FUNDING"
- *                         borrower: "Maria Garcia"
- *                         progress: 60
- *                         createdAt: "2024-09-20T14:30:00.000Z"
- *                       - id: "234b5678-c90d-12e3-f456-789012345678"
- *                         title: "Medical Equipment Upgrade"
- *                         description: "Upgrade clinic diagnostic equipment"
- *                         amountRequested: 120000
- *                         amountFunded: 0
- *                         interestRate: 12.0
- *                         duration: 48
- *                         durationUnit: "MONTHS"
- *                         totalInterest: 57600.0
- *                         status: "PENDING"
- *                         borrower: "Dr. James Wilson"
- *                         progress: 0
- *                         createdAt: "2024-09-21T11:15:00.000Z"
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Dashboard data fetched successfully"
+ *                 data:
+ *                   $ref: '#/components/schemas/UnifiedDashboard'
  *       401:
  *         description: Authentication required
  *         content:
@@ -258,7 +36,7 @@ const router = (0, express_1.Router)();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
- *         description: Email verification required or invalid role
+ *         description: Email verification required
  *         content:
  *           application/json:
  *             schema:
@@ -270,7 +48,7 @@ const router = (0, express_1.Router)();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/dashboard", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, (0, authMiddleware_1.requireRole)(client_1.Role.BORROWER, client_1.Role.LENDER), loanController_1.getDashboardData);
+router.get("/dashboard", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.getDashboardData);
 /**
  * @swagger
  * /api/loans/create-loan:
@@ -279,7 +57,7 @@ router.get("/dashboard", authMiddleware_1.authenticateToken, authMiddleware_1.re
  *     tags: [Loans]
  *     security:
  *       - BearerAuth: []
- *     description: Only authenticated and verified borrowers can create loan applications
+ *     description: Any authenticated and verified user can create loan applications
  *     requestBody:
  *       required: true
  *       content:
@@ -323,7 +101,7 @@ router.get("/dashboard", authMiddleware_1.authenticateToken, authMiddleware_1.re
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/create-loan", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, (0, authMiddleware_1.requireRole)(client_1.Role.BORROWER), loanController_1.createLoan);
+router.post("/create-loan", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.createLoan);
 /**
  * @swagger
  * /api/loans/my-loans:
@@ -453,7 +231,7 @@ router.post("/create-loan", authMiddleware_1.authenticateToken, authMiddleware_1
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/my-loans", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, (0, authMiddleware_1.requireRole)(client_1.Role.BORROWER), loanController_1.getMyLoans);
+router.get("/my-loans", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.getMyLoans);
 /**
  * @swagger
  * /api/loans/{id}/fund:
@@ -462,7 +240,7 @@ router.get("/my-loans", authMiddleware_1.authenticateToken, authMiddleware_1.req
  *     tags: [Loans]
  *     security:
  *       - BearerAuth: []
- *     description: Only authenticated and verified lenders can fund loans
+ *     description: Any authenticated and verified user can fund loans (except their own)
  *     parameters:
  *       - in: path
  *         name: id
@@ -517,7 +295,7 @@ router.get("/my-loans", authMiddleware_1.authenticateToken, authMiddleware_1.req
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post("/:id/fund", // The loan ID is passed as a URL parameter
-authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, (0, authMiddleware_1.requireRole)(client_1.Role.LENDER), loanController_1.fundLoan);
+authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.fundLoan);
 /**
  * @swagger
  * /api/loans/open:
@@ -526,7 +304,7 @@ authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, (
  *     tags: [Loans]
  *     security:
  *       - BearerAuth: []
- *     description: Returns a paginated list of open loans that lenders can fund
+ *     description: Returns a paginated list of open loans available for funding (excludes user's own loans)
  *     parameters:
  *       - in: query
  *         name: page
@@ -696,5 +474,5 @@ authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, (
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/open", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, (0, authMiddleware_1.requireRole)(client_1.Role.LENDER), loanController_1.getOpenLoans);
+router.get("/open", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.getOpenLoans);
 exports.default = router;

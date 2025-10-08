@@ -446,6 +446,14 @@ export const fundLoanService = async (
 
     if (!loan) throw new Error("Loan not found.");
     if (!lender) throw new Error("Lender not found.");
+
+    // SELF-FUNDING GATE: Prevent users from funding their own loans
+    if (loan.borrowerId === lenderId) {
+      throw new Error(
+        "Self-funding is prohibited. You cannot fund your own loan."
+      );
+    }
+
     if (lender.availableBalance.toNumber() < amount) {
       throw new Error("Insufficient available funds in wallet.");
     }
@@ -504,9 +512,14 @@ export const fundLoanService = async (
   });
 };
 
+/**
+ * Get open loans available for funding (excludes loans created by the current user)
+ * Market View: Excludes loans where the authenticated user is the borrower
+ */
 export const getOpenLoansService = async (
   page: number,
   pageSize: number,
+  userId: string, // Added userId parameter for self-exclusion
   query?: string,
   minAmount?: number,
   maxAmount?: number,
@@ -518,6 +531,10 @@ export const getOpenLoansService = async (
   const where: any = {
     status: {
       in: [LoanStatus.PENDING, LoanStatus.FUNDING],
+    },
+    // MANDATORY: Exclude loans where the user is the borrower (Self-Funding Gate)
+    borrowerId: {
+      not: userId,
     },
   };
 
@@ -690,6 +707,145 @@ export const getAllLoansByBorrower = async (
   );
 
   return { loans: mapped, totalCount, totalPages };
+};
+
+/**
+ * Get user's loans where they are either borrower or lender
+ * Private View: Includes all loans where the authenticated user is either the borrower OR the lender
+ */
+export const getMyLoans = async (
+  userId: string,
+  page: number = 1,
+  pageSize: number = 10,
+  query?: string,
+  minAmount?: number,
+  maxAmount?: number,
+  status?: string
+): Promise<{
+  loans: LoanWithDetails[];
+  totalCount: number;
+  totalPages: number;
+}> => {
+  const skip = (page - 1) * pageSize;
+
+  // Base where clause using OR condition for borrower or lender
+  const where: any = {
+    OR: [
+      { borrowerId: userId }, // User is the borrower
+      { fundedBy: { some: { id: userId } } }, // User is a lender (has funded this loan)
+    ],
+  };
+
+  // Add search functionality
+  if (query) {
+    const searchTermUpper = query.toUpperCase();
+    const orConditions: any[] = [
+      { title: { contains: query, mode: "insensitive" } },
+      { description: { contains: query, mode: "insensitive" } },
+    ];
+
+    // If the search term matches a valid status, also filter by status
+    const validStatuses = [
+      "PENDING",
+      "FUNDING",
+      "FULLY_FUNDED",
+      "ACTIVE",
+      "REPAID",
+    ];
+    if (validStatuses.includes(searchTermUpper)) {
+      where.status = searchTermUpper;
+    }
+
+    // Combine OR conditions with existing where clause
+    where.AND = [
+      { OR: where.OR }, // Keep the borrower/lender OR condition
+      { OR: orConditions }, // Add search OR conditions
+    ];
+    delete where.OR; // Remove the top-level OR since we're using AND now
+  }
+
+  // Add amount filters
+  if (minAmount || maxAmount) {
+    where.amountRequested = {};
+    if (minAmount) {
+      where.amountRequested.gte = minAmount;
+    }
+    if (maxAmount) {
+      where.amountRequested.lte = maxAmount;
+    }
+  }
+
+  // Add status filter
+  if (status) {
+    const statusUpper = status.toUpperCase();
+    const validStatuses = [
+      "PENDING",
+      "FUNDING",
+      "FULLY_FUNDED",
+      "ACTIVE",
+      "REPAID",
+    ];
+    if (validStatuses.includes(statusUpper)) {
+      where.status = statusUpper;
+    }
+  }
+
+  const [loans, totalCount] = await Promise.all([
+    prisma.loan.findMany({
+      where,
+      skip,
+      take: pageSize,
+      orderBy: { createdAt: "desc" },
+      include: {
+        borrower: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        fundedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    }),
+    prisma.loan.count({ where }),
+  ]);
+
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  // Transform loans to include user's role in each loan
+  const loansWithDetails: LoanWithDetails[] = loans.map((loan: any) => ({
+    id: loan.id,
+    title: loan.title,
+    description: loan.description,
+    amountRequested: convertDecimalToNumber(loan.amountRequested),
+    amountFunded: convertDecimalToNumber(loan.amountFunded),
+    interestRate: convertDecimalToNumber(loan.interestRate),
+    duration: loan.duration,
+    durationUnit: loan.durationUnit,
+    totalInterest: convertDecimalToNumber(loan.totalInterest),
+    principalRepaid: convertDecimalToNumber(loan.principalRepaid),
+    status: loan.status,
+    createdAt: loan.createdAt,
+    updatedAt: loan.updatedAt,
+    borrower: loan.borrower,
+    fundedBy: loan.fundedBy,
+    // Add user's role in this specific loan
+    userRole: loan.borrowerId === userId ? "BORROWER" : "LENDER",
+  }));
+
+  return {
+    loans: loansWithDetails,
+    totalCount,
+    totalPages,
+  };
 };
 
 /**

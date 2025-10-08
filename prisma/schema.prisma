@@ -21,7 +21,6 @@ model User {
   firstName        String
   lastName         String
   password         String
-  role             Role
   isEmailVerified  Boolean     @default(false)
   emailVerifiedAt  DateTime?   // Timestamp when email was verified
   verificationToken String?    @unique  // Token for email verification
@@ -41,12 +40,6 @@ model User {
   fundedLoans      Loan[]      @relation("FundedLoans")
   transactions     Transaction[]
 }
-
-enum Role {
-  BORROWER
-  LENDER
-}
-
 
 model Transaction {
   id            String          @id @default(uuid())

@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { depositFunds, withdrawFunds } from "../controllers/walletController";
-import { authenticateToken, requireRole } from "../middleware/authMiddleware";
-import { Role } from "../../node_modules/.prisma/client";
+import { authenticateToken } from "../middleware/authMiddleware";
 
 const router = Router();
 
@@ -46,12 +45,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post(
-  "/deposit",
-  authenticateToken,
-  requireRole(Role.BORROWER, Role.LENDER),
-  depositFunds
-);
+router.post("/deposit", authenticateToken, depositFunds);
 
 /**
  * @swagger
@@ -94,11 +88,6 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post(
-  "/withdraw",
-  authenticateToken,
-  requireRole(Role.BORROWER, Role.LENDER),
-  withdrawFunds
-);
+router.post("/withdraw", authenticateToken, withdrawFunds);
 
 export default router;

@@ -64,6 +64,15 @@ exports.processVerifiedDeposit = processVerifiedDeposit;
  * This ONLY confirms the payment status and logs the intent, it does NOT update the balance.
  */
 const confirmDepositAttemptService = async (userId, amount, reference) => {
+    // First check if this reference has already been processed
+    const existingTransaction = await prisma.transaction.findUnique({
+        where: {
+            externalRef: reference,
+        },
+    });
+    if (existingTransaction) {
+        throw new Error("Transaction reference has already been processed");
+    }
     const MAX_RETRIES = 3; // Maximum attempts
     let currentRetry = 0;
     while (currentRetry < MAX_RETRIES) {

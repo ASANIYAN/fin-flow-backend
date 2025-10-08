@@ -2,7 +2,6 @@ import jwt from "jsonwebtoken";
 import { errorResponse } from "../utils/message";
 import { Request, Response, NextFunction } from "express";
 import { AuthenticatedRequest, JWTPayload, AuthErrorType } from "../types/auth";
-import { Role } from "../../node_modules/.prisma/client";
 
 // Configuration validation - fail fast if JWT_SECRET is not defined
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -36,7 +35,6 @@ export const authenticateToken = (
     (req as AuthenticatedRequest).user = {
       id: decoded.userId,
       email: decoded.email || "", // Handle case where email might not be in JWT
-      role: decoded.role,
     };
 
     next();
@@ -85,11 +83,7 @@ const verifyJWTToken = (token: string): JWTPayload => {
 // Helper function to validate JWT payload structure
 const isValidJWTPayload = (payload: any): payload is JWTPayload => {
   return (
-    payload &&
-    typeof payload === "object" &&
-    typeof payload.userId === "string" &&
-    typeof payload.role === "string" &&
-    Object.values(Role).includes(payload.role)
+    payload && typeof payload === "object" && typeof payload.userId === "string"
   );
 };
 
@@ -167,24 +161,4 @@ export const requireEmailVerification = async (
       "Unable to verify email status. Please try again later."
     );
   }
-};
-
-export const requireRole = (...allowedRoles: Role[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const authenticatedReq = req as AuthenticatedRequest;
-
-    if (!authenticatedReq.user) {
-      return errorResponse(res, 401, "Authentication required");
-    }
-
-    if (!allowedRoles.includes(authenticatedReq.user.role)) {
-      return errorResponse(
-        res,
-        403,
-        `Access denied. Required roles: ${allowedRoles.join(", ")}`
-      );
-    }
-
-    next();
-  };
 };

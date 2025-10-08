@@ -1,7 +1,6 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { PrismaClient } from "@prisma/client";
-import { Role } from "../../node_modules/.prisma/client";
 
 const prisma = new PrismaClient();
 const saltRounds = 10;
@@ -13,8 +12,7 @@ export const createUser = async (
   email: string,
   password: string,
   firstName: string,
-  lastName: string,
-  role: Role
+  lastName: string
 ) => {
   const hashedPassword = await bcrypt.hash(password, saltRounds);
   const verificationToken = crypto.randomBytes(32).toString("hex");
@@ -25,7 +23,6 @@ export const createUser = async (
       password: hashedPassword,
       firstName,
       lastName,
-      role,
       verificationToken,
     },
   });
@@ -149,7 +146,6 @@ export const getUserProfileService = async (userId: string) => {
       email: true,
       firstName: true,
       lastName: true,
-      role: true,
       isEmailVerified: true,
       availableBalance: true,
       escrowBalance: true,
@@ -190,7 +186,6 @@ export const updateUserProfileService = async (
       email: true,
       firstName: true,
       lastName: true,
-      role: true,
       isEmailVerified: true,
       createdAt: true,
     },

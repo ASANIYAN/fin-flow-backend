@@ -29,7 +29,6 @@ describe("User Endpoints", () => {
                 password: "hashedpassword",
                 firstName: "Verified",
                 lastName: "User",
-                role: "BORROWER",
                 isEmailVerified: true,
                 emailVerifiedAt: new Date(),
                 availableBalance: 25000,
@@ -44,7 +43,6 @@ describe("User Endpoints", () => {
                 password: "hashedpassword",
                 firstName: "Unverified",
                 lastName: "User",
-                role: "LENDER",
                 availableBalance: 0,
                 escrowBalance: 0,
             },
@@ -52,8 +50,8 @@ describe("User Endpoints", () => {
         userId = verifiedUser.id;
         unverifiedUserId = unverifiedUser.id;
         // Generate JWT tokens
-        userToken = jsonwebtoken_1.default.sign({ userId: verifiedUser.id, role: verifiedUser.role }, JWT_SECRET);
-        unverifiedUserToken = jsonwebtoken_1.default.sign({ userId: unverifiedUser.id, role: unverifiedUser.role }, JWT_SECRET);
+        userToken = jsonwebtoken_1.default.sign({ userId: verifiedUser.id }, JWT_SECRET);
+        unverifiedUserToken = jsonwebtoken_1.default.sign({ userId: unverifiedUser.id }, JWT_SECRET);
         // Create some test transactions for the verified user
         await userService_1.prisma.transaction.createMany({
             data: [
@@ -95,7 +93,6 @@ describe("User Endpoints", () => {
             expect(res.body.data).toHaveProperty("email", "verified@test.com");
             expect(res.body.data).toHaveProperty("firstName", "Verified");
             expect(res.body.data).toHaveProperty("lastName", "User");
-            expect(res.body.data).toHaveProperty("role", "BORROWER");
             expect(res.body.data).toHaveProperty("isEmailVerified", true);
             expect(res.body.data).toHaveProperty("createdAt");
             // Ensure sensitive fields are not returned
@@ -131,11 +128,10 @@ describe("User Endpoints", () => {
                     password: "hashedpassword",
                     firstName: "Temp",
                     lastName: "User",
-                    role: "BORROWER",
                     isEmailVerified: true,
                 },
             });
-            const tempToken = jsonwebtoken_1.default.sign({ userId: tempUser.id, role: tempUser.role }, JWT_SECRET);
+            const tempToken = jsonwebtoken_1.default.sign({ userId: tempUser.id }, JWT_SECRET);
             // Delete the user but keep the token
             await userService_1.prisma.user.delete({ where: { id: tempUser.id } });
             const res = await (0, supertest_1.default)(server_1.default)
@@ -317,7 +313,6 @@ describe("User Endpoints", () => {
                     password: "hashedpassword",
                     firstName: "Other",
                     lastName: "User",
-                    role: "LENDER",
                     isEmailVerified: true,
                     availableBalance: 0,
                     escrowBalance: 0,

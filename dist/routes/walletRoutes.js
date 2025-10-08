@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const walletController_1 = require("../controllers/walletController");
 const authMiddleware_1 = require("../middleware/authMiddleware");
-const client_1 = require("../../node_modules/.prisma/client");
 const router = (0, express_1.Router)();
 /**
  * @swagger
@@ -46,7 +45,7 @@ const router = (0, express_1.Router)();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/deposit", authMiddleware_1.authenticateToken, (0, authMiddleware_1.requireRole)(client_1.Role.BORROWER, client_1.Role.LENDER), walletController_1.depositFunds);
+router.post("/deposit", authMiddleware_1.authenticateToken, walletController_1.depositFunds);
 /**
  * @swagger
  * /api/wallet/withdraw:
@@ -88,5 +87,5 @@ router.post("/deposit", authMiddleware_1.authenticateToken, (0, authMiddleware_1
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/withdraw", authMiddleware_1.authenticateToken, (0, authMiddleware_1.requireRole)(client_1.Role.BORROWER, client_1.Role.LENDER), walletController_1.withdrawFunds);
+router.post("/withdraw", authMiddleware_1.authenticateToken, walletController_1.withdrawFunds);
 exports.default = router;

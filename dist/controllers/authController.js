@@ -40,7 +40,7 @@ const sendVerificationEmail = async (req, res) => {
 };
 exports.sendVerificationEmail = sendVerificationEmail;
 const signup = async (req, res) => {
-    const { email, password, confirmPassword, firstName, lastName, role } = req.body;
+    const { email, password, confirmPassword, firstName, lastName } = req.body;
     // Define validation schema for signup
     const signupValidationSchema = {
         email: {
@@ -73,11 +73,6 @@ const signup = async (req, res) => {
             minLength: 1,
             maxLength: 50,
         },
-        role: {
-            type: "string",
-            required: true,
-            enum: ["BORROWER", "LENDER"],
-        },
     };
     // Validate request data
     if (!(0, validation_1.validateAndRespond)(req.body, signupValidationSchema, res)) {
@@ -98,7 +93,7 @@ const signup = async (req, res) => {
         });
     }
     try {
-        const newUser = await (0, userService_1.createUser)(email, password, firstName, lastName, role);
+        const newUser = await (0, userService_1.createUser)(email, password, firstName, lastName);
         // Send verification email
         const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${newUser.verificationToken}`;
         await (0, emailService_1.sendEmail)({
@@ -113,7 +108,6 @@ const signup = async (req, res) => {
             firstName: newUser.firstName,
             lastName: newUser.lastName,
             isEmailVerified: newUser.isEmailVerified,
-            role: newUser.role,
         };
         return (0, message_1.successResponse)(res, 201, "User created successfully", userData);
     }
@@ -178,7 +172,7 @@ const login = async (req, res) => {
             return (0, message_1.errorResponse)(res, 403, "Please verify your email address before logging in");
         }
         // Generate JWT with 24 hour expiry
-        const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "24h" } // Token expires in 24 hours
+        const token = jsonwebtoken_1.default.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: "24h" } // Token expires in 24 hours
         );
         // Decode token to extract issued at and expiry
         const decoded = jsonwebtoken_1.default.decode(token);
@@ -192,7 +186,6 @@ const login = async (req, res) => {
             email: user.email,
             firstName: user.firstName,
             lastName: user.lastName,
-            role: user.role,
             isEmailVerified: user.isEmailVerified,
         };
         return (0, message_1.successResponse)(res, 200, "Login successful", {

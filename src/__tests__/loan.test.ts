@@ -29,7 +29,6 @@ describe("Loan Endpoints", () => {
         password: "hashedpassword",
         firstName: "Test",
         lastName: "Borrower",
-        role: "BORROWER",
         isEmailVerified: true,
         emailVerifiedAt: new Date(),
         availableBalance: 0,
@@ -44,7 +43,6 @@ describe("Loan Endpoints", () => {
         password: "hashedpassword",
         firstName: "Test",
         lastName: "Lender",
-        role: "LENDER",
         isEmailVerified: true,
         emailVerifiedAt: new Date(),
         availableBalance: 50000,
@@ -56,14 +54,8 @@ describe("Loan Endpoints", () => {
     lenderId = lender.id;
 
     // Generate JWT tokens
-    borrowerToken = jwt.sign(
-      { userId: borrower.id, role: borrower.role },
-      JWT_SECRET
-    );
-    lenderToken = jwt.sign(
-      { userId: lender.id, role: lender.role },
-      JWT_SECRET
-    );
+    borrowerToken = jwt.sign({ userId: borrower.id }, JWT_SECRET);
+    lenderToken = jwt.sign({ userId: lender.id }, JWT_SECRET);
 
     // Create a test loan
     const loan = await prisma.loan.create({
@@ -96,8 +88,8 @@ describe("Loan Endpoints", () => {
       expect(res.body).toHaveProperty("success", true);
       expect(res.body.data).toHaveProperty("totalApplications");
       expect(res.body.data).toHaveProperty("pendingApplications");
-      expect(res.body.data).toHaveProperty("activeLoans");
-      expect(Array.isArray(res.body.data.activeLoans)).toBe(true);
+      expect(res.body.data).toHaveProperty("activeLoansAsBorrower");
+      expect(Array.isArray(res.body.data.activeLoansAsBorrower)).toBe(true);
     });
 
     it("should return lender dashboard data", async () => {
@@ -146,7 +138,7 @@ describe("Loan Endpoints", () => {
       expect(res.body.data).toHaveProperty("id");
     });
 
-    it("should reject loan creation for lender", async () => {
+    it("should allow any authenticated user to create a loan", async () => {
       const loanData = {
         title: "Business Loan",
         description: "Loan for business expansion",
@@ -161,8 +153,9 @@ describe("Loan Endpoints", () => {
         .set("Authorization", `Bearer ${lenderToken}`)
         .send(loanData);
 
-      expect(res.statusCode).toEqual(403);
-      expect(res.body).toHaveProperty("success", false);
+      expect(res.statusCode).toEqual(201);
+      expect(res.body).toHaveProperty("success", true);
+      expect(res.body.data).toHaveProperty("id");
     });
 
     it("should validate required fields", async () => {
@@ -222,7 +215,7 @@ describe("Loan Endpoints", () => {
       expect(res.body).toHaveProperty("success", true);
     });
 
-    it("should reject funding for borrower", async () => {
+    it("should reject self-funding (borrower cannot fund their own loan)", async () => {
       const fundingData = {
         amount: 5000,
       };
@@ -232,7 +225,7 @@ describe("Loan Endpoints", () => {
         .set("Authorization", `Bearer ${borrowerToken}`)
         .send(fundingData);
 
-      expect(res.statusCode).toEqual(403);
+      expect(res.statusCode).toEqual(400); // Updated to expect 400 for self-funding prevention
       expect(res.body).toHaveProperty("success", false);
     });
 

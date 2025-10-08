@@ -18,7 +18,6 @@ describe("Loan Service - getOpenLoansService", () => {
                 password: "hashed",
                 firstName: "Svc",
                 lastName: "Borrower",
-                role: "BORROWER",
                 isEmailVerified: true,
                 emailVerifiedAt: new Date(),
                 availableBalance: 0,
@@ -43,7 +42,7 @@ describe("Loan Service - getOpenLoansService", () => {
         });
     });
     it("returns loans containing durationUnit, totalInterest, principalRepaid, status, borrowerId and updatedAt", async () => {
-        const { loans } = await (0, loanService_1.getOpenLoansService)(1, 10);
+        const { loans } = await (0, loanService_1.getOpenLoansService)(1, 10, "test-user-id");
         expect(Array.isArray(loans)).toBe(true);
         expect(loans.length).toBeGreaterThan(0);
         const loan = loans[0];
@@ -68,16 +67,16 @@ describe("Loan Service - getOpenLoansService", () => {
     it("returns empty loans array when there are no open loans", async () => {
         // Remove all loans to simulate empty open loans
         await userService_1.prisma.loan.deleteMany({});
-        const { loans } = await (0, loanService_1.getOpenLoansService)(1, 10);
+        const { loans } = await (0, loanService_1.getOpenLoansService)(1, 10, "test-user-id");
         expect(Array.isArray(loans)).toBe(true);
         expect(loans.length).toBe(0);
     });
     it("respects minAmount filter and returns no loans when filter excludes results", async () => {
         // Ensure at least one loan exists with amountRequested = 1000 (seeded in beforeEach)
-        const { loans: initialLoans } = await (0, loanService_1.getOpenLoansService)(1, 10);
+        const { loans: initialLoans } = await (0, loanService_1.getOpenLoansService)(1, 10, "test-user-id");
         expect(initialLoans.length).toBeGreaterThanOrEqual(0);
         // Use a minAmount greater than any existing loan's amountRequested
-        const { loans: filtered } = await (0, loanService_1.getOpenLoansService)(1, 10, undefined, 999999);
+        const { loans: filtered } = await (0, loanService_1.getOpenLoansService)(1, 10, "test-user-id", undefined, 999999);
         expect(Array.isArray(filtered)).toBe(true);
         expect(filtered.length).toBe(0);
     });

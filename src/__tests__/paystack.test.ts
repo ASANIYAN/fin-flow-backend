@@ -110,7 +110,6 @@ describe("Paystack Endpoints", () => {
           password: "hashedpassword",
           firstName: "Webhook",
           lastName: "User",
-          role: "LENDER",
           isEmailVerified: true,
           availableBalance: 0,
           escrowBalance: 0,

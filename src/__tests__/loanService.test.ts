@@ -19,7 +19,6 @@ describe("Loan Service - getOpenLoansService", () => {
         password: "hashed",
         firstName: "Svc",
         lastName: "Borrower",
-        role: "BORROWER",
         isEmailVerified: true,
         emailVerifiedAt: new Date(),
         availableBalance: 0,
@@ -46,7 +45,7 @@ describe("Loan Service - getOpenLoansService", () => {
   });
 
   it("returns loans containing durationUnit, totalInterest, principalRepaid, status, borrowerId and updatedAt", async () => {
-    const { loans } = await getOpenLoansService(1, 10);
+    const { loans } = await getOpenLoansService(1, 10, "test-user-id");
 
     expect(Array.isArray(loans)).toBe(true);
     expect(loans.length).toBeGreaterThan(0);
@@ -82,20 +81,25 @@ describe("Loan Service - getOpenLoansService", () => {
     // Remove all loans to simulate empty open loans
     await prisma.loan.deleteMany({});
 
-    const { loans } = await getOpenLoansService(1, 10);
+    const { loans } = await getOpenLoansService(1, 10, "test-user-id");
     expect(Array.isArray(loans)).toBe(true);
     expect(loans.length).toBe(0);
   });
 
   it("respects minAmount filter and returns no loans when filter excludes results", async () => {
     // Ensure at least one loan exists with amountRequested = 1000 (seeded in beforeEach)
-    const { loans: initialLoans } = await getOpenLoansService(1, 10);
+    const { loans: initialLoans } = await getOpenLoansService(
+      1,
+      10,
+      "test-user-id"
+    );
     expect(initialLoans.length).toBeGreaterThanOrEqual(0);
 
     // Use a minAmount greater than any existing loan's amountRequested
     const { loans: filtered } = await getOpenLoansService(
       1,
       10,
+      "test-user-id",
       undefined,
       999999
     );

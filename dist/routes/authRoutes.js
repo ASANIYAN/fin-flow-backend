@@ -7,7 +7,8 @@ const router = (0, express_1.Router)();
  * @swagger
  * /api/auth/signup:
  *   post:
- *     summary: Create a new user account
+ *     summary: Create a new user account for P2P lending
+ *     description: Register a new user who can participate as both borrower and lender in the P2P marketplace
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -21,7 +22,6 @@ const router = (0, express_1.Router)();
  *               - confirmPassword
  *               - firstName
  *               - lastName
- *               - role
  *             properties:
  *               email:
  *                 type: string
@@ -39,10 +39,6 @@ const router = (0, express_1.Router)();
  *               lastName:
  *                 type: string
  *                 example: "Doe"
- *               role:
- *                 type: string
- *                 enum: [BORROWER, LENDER]
- *                 example: "BORROWER"
  *     responses:
  *       201:
  *         description: User created successfully

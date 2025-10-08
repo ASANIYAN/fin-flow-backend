@@ -36,11 +36,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requireRole = exports.requireEmailVerification = exports.authenticateToken = void 0;
+exports.requireEmailVerification = exports.authenticateToken = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const message_1 = require("../utils/message");
 const auth_1 = require("../types/auth");
-const client_1 = require("../../node_modules/.prisma/client");
 // Configuration validation - fail fast if JWT_SECRET is not defined
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -64,7 +63,6 @@ const authenticateToken = (req, res, next) => {
         req.user = {
             id: decoded.userId,
             email: decoded.email || "", // Handle case where email might not be in JWT
-            role: decoded.role,
         };
         next();
     }
@@ -108,9 +106,7 @@ const verifyJWTToken = (token) => {
 const isValidJWTPayload = (payload) => {
     return (payload &&
         typeof payload === "object" &&
-        typeof payload.userId === "string" &&
-        typeof payload.role === "string" &&
-        Object.values(client_1.Role).includes(payload.role));
+        typeof payload.userId === "string");
 };
 // Enhanced error handler with specific error messages
 const handleAuthenticationError = (res, error) => {
@@ -160,16 +156,3 @@ const requireEmailVerification = async (req, res, next) => {
     }
 };
 exports.requireEmailVerification = requireEmailVerification;
-const requireRole = (...allowedRoles) => {
-    return (req, res, next) => {
-        const authenticatedReq = req;
-        if (!authenticatedReq.user) {
-            return (0, message_1.errorResponse)(res, 401, "Authentication required");
-        }
-        if (!allowedRoles.includes(authenticatedReq.user.role)) {
-            return (0, message_1.errorResponse)(res, 403, `Access denied. Required roles: ${allowedRoles.join(", ")}`);
-        }
-        next();
-    };
-};
-exports.requireRole = requireRole;

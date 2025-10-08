@@ -16,11 +16,9 @@ import {
 } from "../services/userService";
 import { validateAndRespond, ValidationSchema } from "../utils/validation";
 
-import { Role } from "../../node_modules/.prisma/client";
 import { Prisma } from "@prisma/client";
 
 interface SignupRequestBody {
-  role: Role;
   email: string;
   password: string;
   firstName: string;
@@ -63,8 +61,7 @@ export const sendVerificationEmail = async (req: Request, res: Response) => {
 };
 
 export const signup = async (req: Request, res: Response) => {
-  const { email, password, confirmPassword, firstName, lastName, role } =
-    req.body;
+  const { email, password, confirmPassword, firstName, lastName } = req.body;
 
   // Define validation schema for signup
   const signupValidationSchema: ValidationSchema = {
@@ -98,11 +95,6 @@ export const signup = async (req: Request, res: Response) => {
       minLength: 1,
       maxLength: 50,
     },
-    role: {
-      type: "string",
-      required: true,
-      enum: ["BORROWER", "LENDER"],
-    },
   };
 
   // Validate request data
@@ -126,13 +118,7 @@ export const signup = async (req: Request, res: Response) => {
   }
 
   try {
-    const newUser = await createUser(
-      email,
-      password,
-      firstName,
-      lastName,
-      role
-    );
+    const newUser = await createUser(email, password, firstName, lastName);
 
     // Send verification email
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${newUser.verificationToken}`;
@@ -150,7 +136,6 @@ export const signup = async (req: Request, res: Response) => {
       firstName: newUser.firstName,
       lastName: newUser.lastName,
       isEmailVerified: newUser.isEmailVerified,
-      role: newUser.role,
     };
 
     return successResponse(res, 201, "User created successfully", userData);
@@ -239,7 +224,7 @@ export const login = async (req: Request, res: Response) => {
 
     // Generate JWT with 24 hour expiry
     const token = jwt.sign(
-      { userId: user.id, role: user.role },
+      { userId: user.id },
       process.env.JWT_SECRET as string,
       { expiresIn: "24h" } // Token expires in 24 hours
     );
@@ -257,7 +242,6 @@ export const login = async (req: Request, res: Response) => {
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
-      role: user.role,
       isEmailVerified: user.isEmailVerified,
     };
 

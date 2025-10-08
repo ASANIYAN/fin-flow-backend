@@ -1,12 +1,10 @@
 // Authentication-related types and interfaces
 
-import { Role } from "../../node_modules/.prisma/client";
 import { Request } from "express";
 
 // JWT payload interface for better type safety
 export interface JWTPayload {
   userId: string;
-  role: Role;
   email?: string; // Email might not always be in JWT payload
   iat?: number; // Issued at
   exp?: number; // Expiration time
@@ -17,7 +15,6 @@ export interface AuthenticatedRequest extends Request {
   user: {
     id: string;
     email: string;
-    role: Role;
     isEmailVerified?: boolean; // Added for email verification checks
   };
 }
@@ -51,7 +48,6 @@ export enum AuthErrorType {
 export interface UserContext {
   id: string;
   email: string;
-  role: Role;
   isEmailVerified?: boolean;
   permissions?: string[];
 }

@@ -8,15 +8,23 @@ const validation_1 = require("../utils/validation");
 const getDashboardData = async (req, res) => {
     const user = req.user;
     try {
-        if (user.role === "BORROWER") {
-            const data = await (0, loanService_1.getBorrowerDashboardData)(user.id);
-            return (0, message_1.successResponse)(res, 200, "Borrower dashboard data fetched successfully", data);
-        }
-        if (user.role === "LENDER") {
-            const data = await (0, loanService_1.getLenderDashboardData)(user.id);
-            return (0, message_1.successResponse)(res, 200, "Lender dashboard data fetched successfully", data);
-        }
-        return (0, message_1.errorResponse)(res, 403, "Access denied. Invalid user role.");
+        // Get both borrower and lender data for the unified user
+        const [borrowerData, lenderData] = await Promise.all([
+            (0, loanService_1.getBorrowerDashboardData)(user.id),
+            (0, loanService_1.getLenderDashboardData)(user.id),
+        ]);
+        const unifiedData = {
+            // Borrower perspective
+            totalApplications: borrowerData.totalApplications,
+            pendingApplications: borrowerData.pendingApplications,
+            activeLoansAsBorrower: borrowerData.activeLoans,
+            // Lender perspective
+            investmentSummary: lenderData.investmentSummary,
+            newListings: lenderData.newListings,
+            // User can act as both
+            availableRoles: ['BORROWER', 'LENDER'],
+        };
+        return (0, message_1.successResponse)(res, 200, "Dashboard data fetched successfully", unifiedData);
     }
     catch (error) {
         // Unexpected error
@@ -147,6 +155,7 @@ const fundLoan = async (req, res) => {
 };
 exports.fundLoan = fundLoan;
 const getOpenLoans = async (req, res) => {
+    const user = req.user;
     const { page, pageSize, q, minAmount, maxAmount, sortBy } = req.query;
     // Define validation schema for query parameters
     const queryValidationSchema = {
@@ -245,7 +254,8 @@ const getOpenLoans = async (req, res) => {
                 });
             }
         }
-        const { loans, totalCount, totalPages } = await (0, loanService_1.getOpenLoansService)(pageNumber, size, query, min, max, sort);
+        const { loans, totalCount, totalPages } = await (0, loanService_1.getOpenLoansService)(pageNumber, size, user.id, // Add userId for self-exclusion
+        query, min, max, sort);
         return (0, message_1.successResponse)(res, 200, "Open loan listings fetched successfully.", {
             loans,
             page: pageNumber,
@@ -262,10 +272,6 @@ const getOpenLoans = async (req, res) => {
 exports.getOpenLoans = getOpenLoans;
 const getMyLoans = async (req, res) => {
     const user = req.user;
-    // Only borrowers can fetch their loans
-    if (user.role !== "BORROWER") {
-        return (0, message_1.errorResponse)(res, 403, "Access denied. Only borrowers can view their loans.");
-    }
     const { page, pageSize, q, minAmount, maxAmount, status } = req.query;
     // Validation schema for query parameters
     const queryValidationSchema = {

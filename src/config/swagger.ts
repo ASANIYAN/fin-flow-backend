@@ -20,7 +20,7 @@ const options: Options = {
         description: "Development server",
       },
       {
-        url: "https://api.finflow.com",
+        url: "https://fin-flow-backend.onrender.com",
         description: "Production server",
       },
     ],
@@ -28,7 +28,7 @@ const options: Options = {
       schemas: {
         User: {
           type: "object",
-          required: ["id", "email", "firstName", "lastName", "role"],
+          required: ["id", "email", "firstName", "lastName"],
           properties: {
             id: {
               type: "string",
@@ -51,12 +51,6 @@ const options: Options = {
               type: "string",
               description: "User last name",
               example: "Doe",
-            },
-            role: {
-              type: "string",
-              enum: ["BORROWER", "LENDER"],
-              description: "User role in the platform",
-              example: "BORROWER",
             },
             isEmailVerified: {
               type: "boolean",
@@ -98,7 +92,6 @@ const options: Options = {
             "confirmPassword",
             "firstName",
             "lastName",
-            "role",
           ],
           properties: {
             email: {
@@ -127,12 +120,6 @@ const options: Options = {
               type: "string",
               description: "User last name",
               example: "Doe",
-            },
-            role: {
-              type: "string",
-              enum: ["BORROWER", "LENDER"],
-              description: "User role in the platform",
-              example: "BORROWER",
             },
           },
         },
@@ -324,6 +311,73 @@ const options: Options = {
             },
           },
         },
+        LoanListing: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "Loan unique identifier",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            title: {
+              type: "string",
+              description: "Loan title or purpose",
+              example: "Small Business Expansion",
+            },
+            description: {
+              type: "string",
+              description: "Detailed loan description",
+              example: "Funding needed to expand our retail operations",
+            },
+            amountRequested: {
+              type: "number",
+              format: "decimal",
+              description: "Total amount requested for the loan",
+              example: 50000.0,
+            },
+            amountFunded: {
+              type: "number",
+              format: "decimal",
+              description: "Amount that has been funded so far",
+              example: 25000.0,
+            },
+            interestRate: {
+              type: "number",
+              format: "decimal",
+              description: "Annual interest rate as a percentage",
+              example: 12.5,
+            },
+            duration: {
+              type: "integer",
+              description: "Loan duration in specified units",
+              example: 24,
+            },
+            status: {
+              type: "string",
+              enum: ["PENDING", "FUNDING", "FULLY_FUNDED", "ACTIVE", "REPAID"],
+              description: "Current loan status",
+              example: "FUNDING",
+            },
+            borrower: {
+              type: "string",
+              description: "Borrower display name",
+              example: "John Doe",
+            },
+            progress: {
+              type: "number",
+              format: "decimal",
+              description: "Funding progress as a percentage (0-100)",
+              example: 50.0,
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              description: "Loan creation timestamp",
+              example: "2024-01-01T00:00:00.000Z",
+            },
+          },
+        },
         CreateLoanRequest: {
           type: "object",
           required: ["title", "amountRequested", "interestRate", "duration"],
@@ -404,54 +458,67 @@ const options: Options = {
             },
           },
         },
-        BorrowerDashboard: {
+        UnifiedDashboard: {
           type: "object",
           properties: {
+            // Borrower perspective
             totalApplications: {
               type: "integer",
-              description: "Total number of loan applications",
+              description: "Total number of loan applications created by user",
               example: 5,
             },
             pendingApplications: {
               type: "integer",
-              description: "Number of pending applications",
+              description: "Number of pending loan applications",
               example: 2,
             },
-            activeLoans: {
+            activeLoansAsBorrower: {
               type: "array",
               items: {
                 $ref: "#/components/schemas/Loan",
               },
-              description: "List of active loans",
+              description: "List of active loans where user is the borrower",
             },
-          },
-        },
-        LenderDashboard: {
-          type: "object",
-          properties: {
-            totalInvested: {
-              type: "number",
-              format: "decimal",
-              description: "Total amount invested",
-              example: 100000.0,
+            // Lender perspective
+            investmentSummary: {
+              type: "object",
+              properties: {
+                totalInvested: {
+                  type: "number",
+                  format: "decimal",
+                  description: "Total amount invested",
+                  example: 100000.0,
+                },
+                totalEarnings: {
+                  type: "number",
+                  format: "decimal",
+                  description: "Total earnings from investments",
+                  example: 12500.0,
+                },
+                activeInvestments: {
+                  type: "integer",
+                  description: "Number of active investments",
+                  example: 8,
+                },
+              },
             },
-            totalEarnings: {
-              type: "number",
-              format: "decimal",
-              description: "Total earnings from investments",
-              example: 12500.0,
-            },
-            activeInvestments: {
-              type: "integer",
-              description: "Number of active investments",
-              example: 8,
-            },
-            recentListings: {
+            newListings: {
               type: "array",
               items: {
-                $ref: "#/components/schemas/Loan",
+                $ref: "#/components/schemas/LoanListing",
               },
-              description: "Recent loan listings available for funding",
+              description:
+                "Recent loan listings available for funding (excluding user's own loans)",
+            },
+            // Available actions
+            availableRoles: {
+              type: "array",
+              items: {
+                type: "string",
+                enum: ["BORROWER", "LENDER"],
+              },
+              description: "Available actions for this user",
+              example: ["BORROWER", "LENDER"],
             },
           },
         },
@@ -602,12 +669,6 @@ const options: Options = {
               type: "string",
               description: "User last name",
               example: "Doe",
-            },
-            role: {
-              type: "string",
-              enum: ["BORROWER", "LENDER"],
-              description: "User role in the platform",
-              example: "BORROWER",
             },
             isEmailVerified: {
               type: "boolean",

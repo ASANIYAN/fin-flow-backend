@@ -105,7 +105,6 @@ describe("Wallet Endpoints", () => {
                 password: "hashedpassword",
                 firstName: "Wallet",
                 lastName: "User",
-                role: "LENDER",
                 isEmailVerified: true,
                 availableBalance: 50000, // Starting balance
                 escrowBalance: 0,
@@ -113,7 +112,7 @@ describe("Wallet Endpoints", () => {
         });
         userId = user.id;
         // Generate JWT token
-        userToken = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role }, JWT_SECRET);
+        userToken = jsonwebtoken_1.default.sign({ userId: user.id }, JWT_SECRET);
         // Wait a bit to ensure setup is complete
         await new Promise((resolve) => setTimeout(resolve, 100));
     });
@@ -132,7 +131,7 @@ describe("Wallet Endpoints", () => {
                 .send(validDepositData);
             expect(res.statusCode).toEqual(200);
             expect(res.body).toHaveProperty("success", true);
-            expect(res.body).toHaveProperty("message", "Wallet funded successfully.");
+            expect(res.body).toHaveProperty("message", "Payment confirmed. Balance update will follow shortly via webhook.");
         });
         it("should validate required fields", async () => {
             const invalidData = {
@@ -190,6 +189,9 @@ describe("Wallet Endpoints", () => {
                 .post("/api/wallet/deposit")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(validDepositData);
+            // Simulate webhook processing for the first transaction
+            const { processVerifiedDeposit } = require("../services/walletService");
+            await processVerifiedDeposit(userId, validDepositData.amount, validDepositData.reference);
             // Try to use same reference again
             const res = await (0, supertest_1.default)(server_1.default)
                 .post("/api/wallet/deposit")
@@ -303,6 +305,9 @@ describe("Wallet Endpoints", () => {
                 .post("/api/wallet/deposit")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(depositData);
+            // Simulate webhook processing by directly calling processVerifiedDeposit
+            const { processVerifiedDeposit } = require("../services/walletService");
+            await processVerifiedDeposit(userId, 15000, "ref_balance_test");
             // Check if balance was updated
             const user = await userService_1.prisma.user.findUnique({
                 where: { id: userId },
@@ -336,6 +341,9 @@ describe("Wallet Endpoints", () => {
                 .post("/api/wallet/deposit")
                 .set("Authorization", `Bearer ${userToken}`)
                 .send(depositData);
+            // Simulate webhook processing by directly calling processVerifiedDeposit
+            const { processVerifiedDeposit } = require("../services/walletService");
+            await processVerifiedDeposit(userId, 7500, "ref_transaction_test");
             // Check if transaction was recorded
             const transactions = await userService_1.prisma.transaction.findMany({
                 where: { userId: userId },
