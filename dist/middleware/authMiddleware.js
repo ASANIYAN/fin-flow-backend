@@ -104,9 +104,7 @@ const verifyJWTToken = (token) => {
 };
 // Helper function to validate JWT payload structure
 const isValidJWTPayload = (payload) => {
-    return (payload &&
-        typeof payload === "object" &&
-        typeof payload.userId === "string");
+    return (payload && typeof payload === "object" && typeof payload.userId === "string");
 };
 // Enhanced error handler with specific error messages
 const handleAuthenticationError = (res, error) => {

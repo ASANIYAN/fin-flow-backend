@@ -22,7 +22,7 @@ const getDashboardData = async (req, res) => {
             investmentSummary: lenderData.investmentSummary,
             newListings: lenderData.newListings,
             // User can act as both
-            availableRoles: ['BORROWER', 'LENDER'],
+            availableRoles: ["BORROWER", "LENDER"],
         };
         return (0, message_1.successResponse)(res, 200, "Dashboard data fetched successfully", unifiedData);
     }

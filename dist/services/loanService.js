@@ -466,7 +466,13 @@ const getMyLoans = async (userId, page = 1, pageSize = 10, query, minAmount, max
             { description: { contains: query, mode: "insensitive" } },
         ];
         // If the search term matches a valid status, also filter by status
-        const validStatuses = ["PENDING", "FUNDING", "FULLY_FUNDED", "ACTIVE", "REPAID"];
+        const validStatuses = [
+            "PENDING",
+            "FUNDING",
+            "FULLY_FUNDED",
+            "ACTIVE",
+            "REPAID",
+        ];
         if (validStatuses.includes(searchTermUpper)) {
             where.status = searchTermUpper;
         }
@@ -490,7 +496,13 @@ const getMyLoans = async (userId, page = 1, pageSize = 10, query, minAmount, max
     // Add status filter
     if (status) {
         const statusUpper = status.toUpperCase();
-        const validStatuses = ["PENDING", "FUNDING", "FULLY_FUNDED", "ACTIVE", "REPAID"];
+        const validStatuses = [
+            "PENDING",
+            "FUNDING",
+            "FULLY_FUNDED",
+            "ACTIVE",
+            "REPAID",
+        ];
         if (validStatuses.includes(statusUpper)) {
             where.status = statusUpper;
         }
@@ -541,7 +553,7 @@ const getMyLoans = async (userId, page = 1, pageSize = 10, query, minAmount, max
         borrower: loan.borrower,
         fundedBy: loan.fundedBy,
         // Add user's role in this specific loan
-        userRole: loan.borrowerId === userId ? 'BORROWER' : 'LENDER',
+        userRole: loan.borrowerId === userId ? "BORROWER" : "LENDER",
     }));
     return {
         loans: loansWithDetails,

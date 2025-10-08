@@ -40,7 +40,8 @@ app.get("/", (req, res) => {
 
 if (require.main === module) {
   app.listen(PORT, () => {
-    // Server started
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
   });
 }
 
