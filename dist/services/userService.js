@@ -6,14 +6,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUserTransactionsService = exports.updateUserProfileService = exports.getUserProfileService = exports.resetUserPassword = exports.generatePasswordResetToken = exports.comparePasswords = exports.findUserById = exports.findUserByEmail = exports.verifyUser = exports.findUserByVerificationToken = exports.createUser = exports.prisma = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const crypto_1 = __importDefault(require("crypto"));
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
-exports.prisma = prisma;
+const prisma_1 = __importDefault(require("../lib/prisma"));
+exports.prisma = prisma_1.default;
 const saltRounds = 10;
 const createUser = async (email, password, firstName, lastName) => {
     const hashedPassword = await bcrypt_1.default.hash(password, saltRounds);
     const verificationToken = crypto_1.default.randomBytes(32).toString("hex");
-    return prisma.user.create({
+    return prisma_1.default.user.create({
         data: {
             email,
             password: hashedPassword,
@@ -25,7 +24,7 @@ const createUser = async (email, password, firstName, lastName) => {
 };
 exports.createUser = createUser;
 const findUserByVerificationToken = async (token) => {
-    return prisma.user.findUnique({
+    return prisma_1.default.user.findUnique({
         where: {
             verificationToken: token,
         },
@@ -33,7 +32,7 @@ const findUserByVerificationToken = async (token) => {
 };
 exports.findUserByVerificationToken = findUserByVerificationToken;
 const verifyUser = async (userId) => {
-    return prisma.user.update({
+    return prisma_1.default.user.update({
         where: {
             id: userId,
         },
@@ -46,7 +45,7 @@ const verifyUser = async (userId) => {
 };
 exports.verifyUser = verifyUser;
 const findUserByEmail = async (email) => {
-    return prisma.user.findUnique({
+    return prisma_1.default.user.findUnique({
         where: {
             email,
         },
@@ -54,7 +53,7 @@ const findUserByEmail = async (email) => {
 };
 exports.findUserByEmail = findUserByEmail;
 const findUserById = async (id) => {
-    return prisma.user.findUnique({
+    return prisma_1.default.user.findUnique({
         where: {
             id,
         },
@@ -88,7 +87,7 @@ const generatePasswordResetToken = async (email) => {
     // Generate a secure, URL-safe token
     const resetToken = crypto_1.default.randomBytes(32).toString("hex");
     const resetTokenExpires = new Date(Date.now() + 3600000); // 1 hour
-    await prisma.user.update({
+    await prisma_1.default.user.update({
         where: { id: user.id },
         data: {
             resetPasswordToken: resetToken,
@@ -100,7 +99,7 @@ const generatePasswordResetToken = async (email) => {
 exports.generatePasswordResetToken = generatePasswordResetToken;
 const resetUserPassword = async (token, newPassword) => {
     const hashedPassword = await bcrypt_1.default.hash(newPassword, saltRounds);
-    const user = await prisma.user.findFirst({
+    const user = await prisma_1.default.user.findFirst({
         where: {
             resetPasswordToken: token,
             resetPasswordExpires: { gt: new Date() }, // Check if token has not expired
@@ -109,7 +108,7 @@ const resetUserPassword = async (token, newPassword) => {
     if (!user) {
         return null;
     }
-    await prisma.user.update({
+    await prisma_1.default.user.update({
         where: { id: user.id },
         data: {
             password: hashedPassword,
@@ -121,7 +120,7 @@ const resetUserPassword = async (token, newPassword) => {
 };
 exports.resetUserPassword = resetUserPassword;
 const getUserProfileService = async (userId) => {
-    const user = await prisma.user.findUnique({
+    const user = await prisma_1.default.user.findUnique({
         where: {
             id: userId,
         },
@@ -157,7 +156,7 @@ const updateUserProfileService = async (userId, updateData) => {
     if (Object.keys(validUpdateFields).length === 0) {
         throw new Error("No valid fields provided for update.");
     }
-    const updatedUser = await prisma.user.update({
+    const updatedUser = await prisma_1.default.user.update({
         where: {
             id: userId,
         },
@@ -203,7 +202,7 @@ const getUserTransactionsService = async (userId, page = 1, pageSize = 10, q) =>
         where.OR = orConditions;
     }
     // Fetch the paginated and filtered transactions
-    const transactions = await prisma.transaction.findMany({
+    const transactions = await prisma_1.default.transaction.findMany({
         where,
         skip,
         take: pageSize,
@@ -220,7 +219,7 @@ const getUserTransactionsService = async (userId, page = 1, pageSize = 10, q) =>
         },
     });
     // Get the total count of transactions for pagination (without skip/take)
-    const totalCount = await prisma.transaction.count({ where });
+    const totalCount = await prisma_1.default.transaction.count({ where });
     const totalPages = Math.ceil(totalCount / pageSize);
     return { transactions, totalCount, totalPages };
 };

@@ -3,8 +3,9 @@ import {
   TransactionType,
   DurationUnit,
 } from "../../node_modules/.prisma/client";
-import { PrismaClient, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
+import prisma from "../lib/prisma";
 
 // Utility function to convert duration to days for consistent calculations
 const convertDurationToDays = (duration: number, unit: string): number => {
@@ -125,8 +126,6 @@ interface LoanWithDetails {
 
 const DEFAULT_EARNINGS_RATE = 0.05; // 5% simplified earnings calculation
 const MAX_NEW_LISTINGS = 10;
-
-const prisma = new PrismaClient();
 
 const calculateProgress = (
   amountFunded: number,
@@ -507,6 +506,16 @@ export const fundLoanService = async (
         status: newLoanStatus,
       },
     });
+
+    if (newLoanStatus === LoanStatus.FULLY_FUNDED) {
+      // Call the internal disbursement function immediately within the same transaction
+      const disbursementResult = await disburseLoanService(loanId);
+
+      return {
+        message: "Loan fully funded and automatically disbursed to borrower.",
+        status: disbursementResult.status,
+      };
+    }
 
     return { message: "Loan funded successfully.", status: newLoanStatus };
   });
@@ -953,7 +962,7 @@ export const repayLoanService = async (
   borrowerId: string,
   paymentAmount: number
 ) => {
-  const paymentAmountDecimal = paymentAmount;
+  const paymentAmountDecimal = paymentAmount; // Using number for Prisma decrement/increment
 
   return prisma.$transaction(async (tx: any) => {
     // 1. Fetch loan and borrower data
@@ -974,33 +983,51 @@ export const repayLoanService = async (
     if (loan.borrowerId !== borrowerId)
       throw new Error("User is not the borrower for this loan.");
 
-    // Check for ACTIVE status
-    if (loan.status !== LoanStatus.ACTIVE)
-      throw new Error("Loan is not in an ACTIVE state for repayment.");
+    // IMPORTANT CONSTRAINT 1: Loan must be ACTIVE to be repaid
+    if (loan.status !== LoanStatus.ACTIVE) {
+      throw new Error(
+        "Loan is not in an ACTIVE state for repayment. Status must be ACTIVE."
+      );
+    }
 
     const borrower = await tx.user.findUnique({
       where: { id: borrowerId },
       select: { availableBalance: true, escrowBalance: true },
     });
+
     if (!borrower || borrower.availableBalance.toNumber() < paymentAmount) {
       throw new Error("Insufficient available funds to make repayment.");
     }
 
-    // 2. DETERMINE INTEREST AND PRINCIPAL PORTIONS (Simplified Amortization)
+    // 2. DETERMINE FIXED INSTALLMENT PORTIONS (Enforcing Exact Payment)
     const totalPeriods = loan.duration;
-    // NOTE: This assumes straight-line interest payment. In a real system, interest accrual must be calculated per period.
-    const interestPerPayment = loan.totalInterest.toNumber() / totalPeriods;
 
-    if (paymentAmount < interestPerPayment) {
+    // Calculate the fixed principal portion per period
+    const principalPerPeriod = loan.amountRequested.toNumber() / totalPeriods;
+    // Calculate the fixed interest portion per period
+    const interestPerPeriod = loan.totalInterest.toNumber() / totalPeriods;
+
+    // Calculate the exact installment required (rounding to 2 decimal places)
+    // This is the CRITICAL value that must be enforced.
+    const requiredInstallmentAmount = parseFloat(
+      (principalPerPeriod + interestPerPeriod).toFixed(2)
+    );
+
+    // Normalize the incoming payment amount for comparison
+    const normalizedPaymentAmount = parseFloat(paymentAmount.toFixed(2));
+
+    // IMPORTANT CONSTRAINT 2: Exact Payment Amount Check
+    if (normalizedPaymentAmount !== requiredInstallmentAmount) {
       throw new Error(
-        `Minimum required payment (interest only) is ${interestPerPayment.toFixed(
+        `Repayment amount must be exactly the required installment of $${requiredInstallmentAmount.toFixed(
           2
         )}.`
       );
     }
 
-    const principalPortion = paymentAmount - interestPerPayment;
-    const interestPortion = interestPerPayment;
+    // Use the calculated fixed portions for the transaction
+    const principalPortion = principalPerPeriod;
+    const interestPortion = interestPerPeriod;
 
     // 3. DEBIT BORROWER & UPDATE LOAN STATUS
     await tx.user.update({
@@ -1044,10 +1071,7 @@ export const repayLoanService = async (
     });
 
     const lenderContributions = fundingTransactions.reduce(
-      (
-        acc: Record<string, number>,
-        tx: { userId: string | null; amount: Decimal }
-      ) => {
+      (acc: Record<string, number>, tx: any) => {
         acc[tx.userId!] = (acc[tx.userId!] || 0) + tx.amount.toNumber();
         return acc;
       },

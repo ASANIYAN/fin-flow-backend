@@ -5,11 +5,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.withdrawFundsService = exports.confirmDepositAttemptService = exports.processVerifiedDeposit = void 0;
 const axios_1 = __importDefault(require("axios"));
-const client_1 = require("@prisma/client");
-const client_2 = require("../../node_modules/.prisma/client");
+const client_1 = require("../../node_modules/.prisma/client");
 const userService_1 = require("./userService");
 const utils_1 = require("../utils/utils");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../lib/prisma"));
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 /**
  * Executes the secure balance update and transaction logging.
@@ -21,7 +20,7 @@ const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
  * @param externalRef The reference from Paystack.
  */
 const processVerifiedDeposit = async (userId, verifiedAmount, reference) => {
-    return prisma.$transaction(async (tx) => {
+    return prisma_1.default.$transaction(async (tx) => {
         // 1. Check if the deposit has already been processed by externalRef (unique index)
         const existingTransaction = await tx.transaction.findUnique({
             where: {
@@ -65,7 +64,7 @@ exports.processVerifiedDeposit = processVerifiedDeposit;
  */
 const confirmDepositAttemptService = async (userId, amount, reference) => {
     // First check if this reference has already been processed
-    const existingTransaction = await prisma.transaction.findUnique({
+    const existingTransaction = await prisma_1.default.transaction.findUnique({
         where: {
             externalRef: reference,
         },
@@ -152,7 +151,7 @@ const initiateTransfer = async (amount, recipientCode) => {
     return response.data.data.reference;
 };
 const withdrawFundsService = async (userId, amount, accountNumber, bankCode) => {
-    return prisma.$transaction(async (prisma) => {
+    return prisma_1.default.$transaction(async (prisma) => {
         const user = await (0, userService_1.findUserById)(userId);
         if (!user || user.availableBalance.toNumber() < amount) {
             throw new Error("Insufficient funds in wallet.");
@@ -172,7 +171,7 @@ const withdrawFundsService = async (userId, amount, accountNumber, bankCode) => 
             data: {
                 userId: userId,
                 amount: amount,
-                type: client_2.TransactionType.WITHDRAWAL,
+                type: client_1.TransactionType.WITHDRAWAL,
                 description: `Withdrawal, Ref: ${transferReference}`,
             },
         });

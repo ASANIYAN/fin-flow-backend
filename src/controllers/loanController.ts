@@ -9,6 +9,7 @@ import {
   getOpenLoansService,
   getAllLoansByBorrower,
   getMyLoans as getMyLoansService,
+  repayLoanService,
 } from "../services/loanService";
 import { errorResponse, successResponse } from "../utils/message";
 import { AuthenticatedRequest } from "../types/auth";
@@ -402,5 +403,62 @@ export const getMyLoans = async (req: Request, res: Response) => {
   } catch (error) {
     // Error fetching user loans
     return errorResponse(res, 500, "An unexpected error occurred.");
+  }
+};
+
+export const repayLoan = async (req: Request, res: Response) => {
+  // The borrower ID comes from the authenticated user token
+  const user = (req as AuthenticatedRequest).user;
+  const loanId = req.params.loanId;
+  const { paymentAmount } = req.body;
+
+  // 1. Input Validation: paymentAmount must be provided and be a positive number
+  const repaymentSchema: ValidationSchema = {
+    paymentAmount: { type: "number", required: true, min: 0.01 },
+  };
+  if (!validateAndRespond(req.body, repaymentSchema, res)) {
+    return;
+  }
+
+  const amount = parseFloat(paymentAmount);
+
+  try {
+    // 2. Call the service to process the repayment
+    const result = await repayLoanService(loanId, user.id, amount);
+
+    return successResponse(
+      res,
+      200,
+      "Loan repayment processed successfully.",
+      result
+    );
+  } catch (error) {
+    console.error("Error processing repayment:", error);
+
+    if (error instanceof Error) {
+      // 3. Specific Error Handling for Service Constraints
+
+      // 400 Bad Request: Business rule violations (not borrower, wrong status, wrong amount)
+      if (
+        error.message.includes("Loan not found") ||
+        error.message.includes("User is not the borrower") ||
+        error.message.includes("ACTIVE state") ||
+        error.message.includes("Repayment amount must be exactly")
+      ) {
+        return errorResponse(res, 400, error.message);
+      }
+
+      // 402 Payment Required: Insufficient funds in the user's wallet
+      if (error.message.includes("Insufficient available funds")) {
+        return errorResponse(res, 402, error.message);
+      }
+    }
+
+    // 500 Internal Server Error for other unexpected issues
+    return errorResponse(
+      res,
+      500,
+      "An unexpected error occurred during repayment processing."
+    );
   }
 };

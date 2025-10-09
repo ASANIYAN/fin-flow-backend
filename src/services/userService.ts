@@ -1,8 +1,7 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../lib/prisma";
 
-const prisma = new PrismaClient();
 const saltRounds = 10;
 
 // Export prisma instance for testing

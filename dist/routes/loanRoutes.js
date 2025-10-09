@@ -475,4 +475,199 @@ authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, l
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get("/open", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.getOpenLoans);
+/**
+ * @swagger
+ * /api/loans/{loanId}/repay:
+ *   post:
+ *     summary: Make a repayment towards a loan
+ *     tags: [Loans]
+ *     security:
+ *       - BearerAuth: []
+ *     description: |
+ *       Allows the borrower to make repayments towards their active loans.
+ *       Supports both partial and full repayments. The borrower can only repay their own loans.
+ *       Repayments are deducted from the borrower's available balance and distributed to lenders.
+ *     parameters:
+ *       - in: path
+ *         name: loanId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the loan to repay
+ *         example: "123e4567-e89b-12d3-a456-426614174001"
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - amount
+ *             properties:
+ *               amount:
+ *                 type: number
+ *                 format: decimal
+ *                 minimum: 0.01
+ *                 description: The repayment amount (must be positive and not exceed outstanding balance)
+ *                 example: 5000.00
+ *               description:
+ *                 type: string
+ *                 maxLength: 500
+ *                 description: Optional description for the repayment transaction
+ *                 example: "Monthly repayment installment #3"
+ *           examples:
+ *             partial_repayment:
+ *               summary: Partial repayment
+ *               value:
+ *                 amount: 2500.00
+ *                 description: "Partial repayment for June"
+ *             full_repayment:
+ *               summary: Full loan repayment
+ *               value:
+ *                 amount: 47500.00
+ *                 description: "Full loan settlement"
+ *     responses:
+ *       200:
+ *         description: Repayment processed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         transactionId:
+ *                           type: string
+ *                           format: uuid
+ *                           description: ID of the repayment transaction
+ *                         amountRepaid:
+ *                           type: number
+ *                           format: decimal
+ *                           description: Amount successfully repaid
+ *                         remainingBalance:
+ *                           type: number
+ *                           format: decimal
+ *                           description: Remaining loan balance after repayment
+ *                         loanStatus:
+ *                           type: string
+ *                           enum: [ACTIVE, REPAID]
+ *                           description: Updated loan status after repayment
+ *                         isFullyRepaid:
+ *                           type: boolean
+ *                           description: Whether the loan is now fully repaid
+ *             examples:
+ *               partial_repayment_success:
+ *                 summary: Successful partial repayment
+ *                 value:
+ *                   success: true
+ *                   message: "Repayment processed successfully"
+ *                   data:
+ *                     transactionId: "456e7890-e12b-34d5-a678-426614174002"
+ *                     amountRepaid: 2500.00
+ *                     remainingBalance: 45000.00
+ *                     loanStatus: "ACTIVE"
+ *                     isFullyRepaid: false
+ *               full_repayment_success:
+ *                 summary: Successful full repayment
+ *                 value:
+ *                   success: true
+ *                   message: "Loan fully repaid successfully"
+ *                   data:
+ *                     transactionId: "456e7890-e12b-34d5-a678-426614174003"
+ *                     amountRepaid: 47500.00
+ *                     remainingBalance: 0.00
+ *                     loanStatus: "REPAID"
+ *                     isFullyRepaid: true
+ *       400:
+ *         description: Invalid repayment request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               invalid_amount:
+ *                 summary: Invalid repayment amount
+ *                 value:
+ *                   success: false
+ *                   message: "Validation failed"
+ *                   error:
+ *                     code: "VALIDATION_ERROR"
+ *                     fields:
+ *                       - field: "amount"
+ *                         message: "Repayment amount must be positive and not exceed outstanding balance"
+ *               insufficient_balance:
+ *                 summary: Insufficient wallet balance
+ *                 value:
+ *                   success: false
+ *                   message: "Insufficient available balance for repayment"
+ *                   error:
+ *                     code: "INSUFFICIENT_FUNDS"
+ *               loan_not_active:
+ *                 summary: Loan not in repayable state
+ *                 value:
+ *                   success: false
+ *                   message: "Loan is not in ACTIVE status and cannot be repaid"
+ *                   error:
+ *                     code: "INVALID_LOAN_STATUS"
+ *       401:
+ *         description: Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Access denied - not the loan borrower or email verification required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               not_borrower:
+ *                 summary: Not the loan borrower
+ *                 value:
+ *                   success: false
+ *                   message: "Access denied: You can only repay your own loans"
+ *                   error:
+ *                     code: "ACCESS_DENIED"
+ *               email_not_verified:
+ *                 summary: Email verification required
+ *                 value:
+ *                   success: false
+ *                   message: "Email verification required to perform loan operations"
+ *                   error:
+ *                     code: "EMAIL_NOT_VERIFIED"
+ *       404:
+ *         description: Loan not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               loan_not_found:
+ *                 summary: Loan does not exist
+ *                 value:
+ *                   success: false
+ *                   message: "Loan not found"
+ *                   error:
+ *                     code: "LOAN_NOT_FOUND"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               server_error:
+ *                 summary: Database or system error
+ *                 value:
+ *                   success: false
+ *                   message: "An unexpected error occurred while processing repayment"
+ *                   error:
+ *                     code: "INTERNAL_ERROR"
+ */
+router.post("/:loanId/repay", authMiddleware_1.authenticateToken, loanController_1.repayLoan);
 exports.default = router;

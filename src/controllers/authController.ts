@@ -44,13 +44,301 @@ export const sendVerificationEmail = async (req: Request, res: Response) => {
       return errorResponse(res, 400, "Email is already verified");
     }
 
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${user.verificationToken}`;
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${user.verificationToken}&email=${email}`;
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html
+  lang="en"
+  xmlns:v="urn:schemas-microsoft-com:vml"
+  xmlns:o="urn:schemas-microsoft-com:office:office"
+>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="format-detection"
+      content="telephone=no, date=no, address=no, email=no"
+    />
+    <!--[if mso]>
+      <xml
+        ><o:OfficeDocumentSettings
+          ><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings
+        ></xml
+      >
+      <style>
+        td,
+        th,
+        div,
+        p,
+        a,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+          font-family: "Segoe UI", sans-serif;
+          mso-line-height-rule: exactly;
+        }
+      </style>
+    <![endif]-->
+    <title>Confirm Your Email Address</title>
+    <style>
+      /* Your base CSS styles */
+      .hover-underline:hover {
+        text-decoration: underline !important;
+      }
+
+      @media (max-width: 600px) {
+        .sm-w-full {
+          width: 100% !important;
+        }
+        .sm-px-24 {
+          padding-left: 24px !important;
+          padding-right: 24px !important;
+        }
+        .sm-py-32 {
+          padding-top: 32px !important;
+          padding-bottom: 32px !important;
+        }
+      }
+    </style>
+  </head>
+  <body
+    style="
+      margin: 0;
+      width: 100%;
+      padding: 0;
+      word-break: break-word;
+      -webkit-font-smoothing: antialiased;
+      background-color: oklch(98.5% 0.002 247.839);
+    "
+  >
+    <div style="display: none">Please confirm your email address</div>
+    <div
+      role="article"
+      aria-roledescription="email"
+      aria-label="Confirm Your Email Address"
+      lang="en"
+    >
+      <table
+        style="
+          width: 100%;
+          font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+            sans-serif;
+        "
+        cellpadding="0"
+        cellspacing="0"
+        role="presentation"
+      >
+        <tr>
+          <td
+            align="center"
+            style="
+              background-color: #2563eb;
+              padding-top: 24px;
+              padding-bottom: 24px;
+            "
+          >
+            <!-- Logo (Placeholder) -->
+            <table cellpadding="0" cellspacing="0" role="presentation">
+              <tr>
+                <td>
+                  <span
+                    style="
+                      font-size: 24px;
+                      font-weight: 700;
+                      color: #ffffff;
+                      text-decoration: none;
+                    "
+                  >P2P Platform</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td align="center">
+            <table
+              class="sm-w-full"
+              style="width: 600px"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+            >
+              <tr>
+                <td
+                  class="sm-py-32 sm-px-24"
+                  style="
+                    padding: 48px;
+                    text-align: left;
+                    background-color: #ffffff;
+                    border-radius: 4px;
+                    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+                  "
+                >
+                  <p
+                    style="
+                      margin: 0;
+                      font-size: 16px;
+                      color: #1a1a1a;
+                      font-weight: 600;
+                    "
+                  >
+                    Hi ${user.email},
+                  </p>
+                  <p
+                    style="
+                      margin: 16px 0;
+                      font-size: 16px;
+                      line-height: 24px;
+                      color: #1a1a1a;
+                    "
+                  >
+                    Thank you for joining our P2P lending platform! We're excited for you to start borrowing and lending with confidence.
+                  </p>
+                  <p
+                    style="
+                      margin: 16px 0;
+                      font-size: 16px;
+                      line-height: 24px;
+                      color: #1a1a1a;
+                    "
+                  >
+                    Your account was successfully created on: ${currentDate}
+                  </p>
+                  <p
+                    style="
+                      margin: 16px 0;
+                      font-size: 16px;
+                      line-height: 24px;
+                      color: #1a1a1a;
+                    "
+                  >
+                    For security reasons, it is imperative that you confirm your
+                    email address. To get started, confirm your email address by
+                    clicking the button below.
+                  </p>
+
+                  <!-- Button -->
+                  <table cellpadding="0" cellspacing="0" role="presentation">
+                    <tr>
+                      <td style="padding: 16px 0">
+                        <a
+                          href="${verificationUrl}"
+                          style="
+                            display: inline-block;
+                            border-radius: 6px;
+                            background-color: #2563eb;
+                            padding: 10px 16px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: #ffffff;
+                            text-decoration: none;
+                          "
+                        >
+                          Confirm your email &rarr;
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <p
+                    style="
+                      margin: 16px 0;
+                      font-size: 16px;
+                      line-height: 24px;
+                      color: #1a1a1a;
+                    "
+                  >
+                    If the button above does not work, please copy and paste the following URL into your web browser:
+                    <br><a href="${verificationUrl}" class="hover-underline" style="color: #2563eb; text-decoration: underline; word-break: break-all;">${verificationUrl}</a>
+                  </p>
+
+                  <p
+                    style="
+                      margin: 16px 0;
+                      font-size: 16px;
+                      line-height: 24px;
+                      color: #1a1a1a;
+                    "
+                  >
+                    Best regards,<br />The P2P Lending Team
+                  </p>
+
+                  <table
+                    style="width: 100%"
+                    cellpadding="0"
+                    cellspacing="0"
+                    role="presentation"
+                  >
+                    <tr>
+                      <td style="padding-top: 24px; padding-bottom: 24px">
+                        <div
+                          style="
+                            height: 1px;
+                            background-color: #e5e7eb;
+                            line-height: 1px;
+                          "
+                        >
+                          &zwnj;
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <p style="margin: 0; font-size: 16px; color: #1a1a1a">
+                    If you have any questions or need assistance, kindly contact
+                    us at:
+                    <a
+                      href="mailto:support@p2papp.com"
+                      class="hover-underline"
+                      style="color: #2563eb; text-decoration: none"
+                      >support@p2papp.com</a
+                    >
+                  </p>
+                </td>
+              </tr>
+              <!-- Footer -->
+              <tr>
+                <td
+                  style="
+                    padding: 32px 24px;
+                    text-align: center;
+                    font-size: 16px;
+                    color: #1a1a1a;
+                  "
+                >
+                  <p style="margin: 0 0 8px">
+                    Cheers to smart, community-driven finance!
+                  </p>
+                  <p style="margin: 0; font-style: italic">
+                    &copy; ${new Date().getFullYear()} P2P Lending Platform. All rights reserved.
+                  </p>
+                  <!-- Social Icons (Removed due to path dependencies, add back with full URLs if needed) -->
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>
+`;
 
     await sendEmail({
       to: user.email,
       subject: "Verify Your Email Address",
-      html: `<p>Please verify your email by clicking the following link:</p>
-             <a href="${verificationUrl}">Verify Email</a>`,
+      html: htmlContent,
     });
 
     return successResponse(res, 200, "Verification email sent successfully");
@@ -121,13 +409,301 @@ export const signup = async (req: Request, res: Response) => {
     const newUser = await createUser(email, password, firstName, lastName);
 
     // Send verification email
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${newUser.verificationToken}`;
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${newUser.verificationToken}&email=${email}`;
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html
+  lang="en"
+  xmlns:v="urn:schemas-microsoft-com:vml"
+  xmlns:o="urn:schemas-microsoft-com:office:office"
+>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="format-detection"
+      content="telephone=no, date=no, address=no, email=no"
+    />
+    <!--[if mso]>
+      <xml
+        ><o:OfficeDocumentSettings
+          ><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings
+        ></xml
+      >
+      <style>
+        td,
+        th,
+        div,
+        p,
+        a,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+          font-family: "Segoe UI", sans-serif;
+          mso-line-height-rule: exactly;
+        }
+      </style>
+    <![endif]-->
+    <title>Confirm Your Email Address</title>
+    <style>
+      /* Your base CSS styles */
+      .hover-underline:hover {
+        text-decoration: underline !important;
+      }
+
+      @media (max-width: 600px) {
+        .sm-w-full {
+          width: 100% !important;
+        }
+        .sm-px-24 {
+          padding-left: 24px !important;
+          padding-right: 24px !important;
+        }
+        .sm-py-32 {
+          padding-top: 32px !important;
+          padding-bottom: 32px !important;
+        }
+      }
+    </style>
+  </head>
+  <body
+    style="
+      margin: 0;
+      width: 100%;
+      padding: 0;
+      word-break: break-word;
+      -webkit-font-smoothing: antialiased;
+      background-color: oklch(98.5% 0.002 247.839);
+    "
+  >
+    <div style="display: none">Please confirm your email address</div>
+    <div
+      role="article"
+      aria-roledescription="email"
+      aria-label="Confirm Your Email Address"
+      lang="en"
+    >
+      <table
+        style="
+          width: 100%;
+          font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+            sans-serif;
+        "
+        cellpadding="0"
+        cellspacing="0"
+        role="presentation"
+      >
+        <tr>
+          <td
+            align="center"
+            style="
+              background-color: #2563eb;
+              padding-top: 24px;
+              padding-bottom: 24px;
+            "
+          >
+            <!-- Logo (Placeholder) -->
+            <table cellpadding="0" cellspacing="0" role="presentation">
+              <tr>
+                <td>
+                  <span
+                    style="
+                      font-size: 24px;
+                      font-weight: 700;
+                      color: #ffffff;
+                      text-decoration: none;
+                    "
+                  >P2P Platform</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td align="center">
+            <table
+              class="sm-w-full"
+              style="width: 600px"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+            >
+              <tr>
+                <td
+                  class="sm-py-32 sm-px-24"
+                  style="
+                    padding: 48px;
+                    text-align: left;
+                    background-color: #ffffff;
+                    border-radius: 4px;
+                    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+                  "
+                >
+                  <p
+                    style="
+                      margin: 0;
+                      font-size: 16px;
+                      color: #1a1a1a;
+                      font-weight: 600;
+                    "
+                  >
+                    Hi ${email},
+                  </p>
+                  <p
+                    style="
+                      margin: 16px 0;
+                      font-size: 16px;
+                      line-height: 24px;
+                      color: #1a1a1a;
+                    "
+                  >
+                    Thank you for joining our P2P lending platform! We're excited for you to start borrowing and lending with confidence.
+                  </p>
+                  <p
+                    style="
+                      margin: 16px 0;
+                      font-size: 16px;
+                      line-height: 24px;
+                      color: #1a1a1a;
+                    "
+                  >
+                    Your account was successfully created on: ${currentDate}
+                  </p>
+                  <p
+                    style="
+                      margin: 16px 0;
+                      font-size: 16px;
+                      line-height: 24px;
+                      color: #1a1a1a;
+                    "
+                  >
+                    For security reasons, it is imperative that you confirm your
+                    email address. To get started, confirm your email address by
+                    clicking the button below.
+                  </p>
+
+                  <!-- Button -->
+                  <table cellpadding="0" cellspacing="0" role="presentation">
+                    <tr>
+                      <td style="padding: 16px 0">
+                        <a
+                          href="${verificationUrl}"
+                          style="
+                            display: inline-block;
+                            border-radius: 6px;
+                            background-color: #2563eb;
+                            padding: 10px 16px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: #ffffff;
+                            text-decoration: none;
+                          "
+                        >
+                          Confirm your email &rarr;
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <p
+                    style="
+                      margin: 16px 0;
+                      font-size: 16px;
+                      line-height: 24px;
+                      color: #1a1a1a;
+                    "
+                  >
+                    If the button above does not work, please copy and paste the following URL into your web browser:
+                    <br><a href="${verificationUrl}" class="hover-underline" style="color: #2563eb; text-decoration: underline; word-break: break-all;">${verificationUrl}</a>
+                  </p>
+
+                  <p
+                    style="
+                      margin: 16px 0;
+                      font-size: 16px;
+                      line-height: 24px;
+                      color: #1a1a1a;
+                    "
+                  >
+                    Best regards,<br />The P2P Lending Team
+                  </p>
+
+                  <table
+                    style="width: 100%"
+                    cellpadding="0"
+                    cellspacing="0"
+                    role="presentation"
+                  >
+                    <tr>
+                      <td style="padding-top: 24px; padding-bottom: 24px">
+                        <div
+                          style="
+                            height: 1px;
+                            background-color: #e5e7eb;
+                            line-height: 1px;
+                          "
+                        >
+                          &zwnj;
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <p style="margin: 0; font-size: 16px; color: #1a1a1a">
+                    If you have any questions or need assistance, kindly contact
+                    us at:
+                    <a
+                      href="mailto:support@p2papp.com"
+                      class="hover-underline"
+                      style="color: #2563eb; text-decoration: none"
+                      >support@p2papp.com</a
+                    >
+                  </p>
+                </td>
+              </tr>
+              <!-- Footer -->
+              <tr>
+                <td
+                  style="
+                    padding: 32px 24px;
+                    text-align: center;
+                    font-size: 16px;
+                    color: #1a1a1a;
+                  "
+                >
+                  <p style="margin: 0 0 8px">
+                    Cheers to smart, community-driven finance!
+                  </p>
+                  <p style="margin: 0; font-style: italic">
+                    &copy; ${new Date().getFullYear()} P2P Lending Platform. All rights reserved.
+                  </p>
+                  <!-- Social Icons (Removed due to path dependencies, add back with full URLs if needed) -->
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>
+`;
 
     await sendEmail({
       to: newUser.email,
       subject: "Verify Your Email Address",
-      html: `<p>Please verify your email by clicking the following link:</p>
-             <a href="${verificationUrl}">Verify Email</a>`,
+      html: htmlContent,
     });
 
     const userData = {
@@ -171,11 +747,6 @@ export const verifyEmail = async (req: Request, res: Response) => {
     return errorResponse(res, 500, "An unexpected error occurred", error);
   }
 };
-
-interface LoginRequestBody {
-  email: string;
-  password: string;
-}
 
 export const login = async (req: Request, res: Response) => {
   // Define validation schema for login
@@ -277,16 +848,287 @@ export const forgotPassword = async (req: Request, res: Response) => {
     }
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${email}`;
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html
+  lang="en"
+  xmlns:v="urn:schemas-microsoft-com:vml"
+  xmlns:o="urn:schemas-microsoft-com:office:office"
+>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="format-detection"
+      content="telephone=no, date=no, address=no, email=no"
+    />
+    <!--[if mso]>
+      <xml
+        ><o:OfficeDocumentSettings
+          ><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings
+        ></xml
+      >
+      <style>
+        td,
+        th,
+        div,
+        p,
+        a,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+          font-family: "Segoe UI", sans-serif;
+          mso-line-height-rule: exactly;
+        }
+      </style>
+    <![endif]-->
+    <title>Password Reset Request</title>
+    <style>
+      /* Your base CSS styles */
+      .hover-underline:hover {
+        text-decoration: underline !important;
+      }
+
+      @media (max-width: 600px) {
+        .sm-w-full {
+          width: 100% !important;
+        }
+        .sm-px-24 {
+          padding-left: 24px !important;
+          padding-right: 24px !important;
+        }
+        .sm-py-32 {
+          padding-top: 32px !important;
+          padding-bottom: 32px !important;
+        }
+      }
+    </style>
+  </head>
+  <body
+    style="
+      margin: 0;
+      width: 100%;
+      padding: 0;
+      word-break: break-word;
+      -webkit-font-smoothing: antialiased;
+      background-color: oklch(98.5% 0.002 247.839);
+    "
+  >
+    <div style="display: none">Password Reset for Your Account</div>
+    <div
+      role="article"
+      aria-roledescription="email"
+      aria-label="Password Reset Request"
+      lang="en"
+    >
+      <table
+        style="
+          width: 100%;
+          font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+            sans-serif;
+        "
+        cellpadding="0"
+        cellspacing="0"
+        role="presentation"
+      >
+        <tr>
+          <td
+            align="center"
+            style="
+              background-color: #2563eb;
+              padding-top: 24px;
+              padding-bottom: 24px;
+            "
+          >
+            <!-- Logo (Placeholder) -->
+            <table cellpadding="0" cellspacing="0" role="presentation">
+              <tr>
+                <td>
+                  <span
+                    style="
+                      font-size: 24px;
+                      font-weight: 700;
+                      color: #ffffff;
+                      text-decoration: none;
+                    "
+                  >P2P Platform</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td align="center">
+            <table
+              class="sm-w-full"
+              style="width: 600px"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+            >
+              <tr>
+                <td
+                  class="sm-py-32 sm-px-24"
+                  style="
+                    padding: 48px;
+                    text-align: left;
+                    background-color: #ffffff;
+                    border-radius: 4px;
+                    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+                  "
+                >
+                  <p
+                    style="
+                      margin: 0;
+                      font-size: 16px;
+                      color: #1a1a1a;
+                      font-weight: 600;
+                    "
+                  >
+                    Hello,
+                  </p>
+                  <p
+                    style="
+                      margin: 16px 0;
+                      font-size: 16px;
+                      line-height: 24px;
+                      color: #1a1a1a;
+                    "
+                  >
+                    We received a request to reset the password for the account associated with **${email}** on ${currentDate}.
+                  </p>
+                  
+                  <p
+                    style="
+                      margin: 16px 0;
+                      font-size: 16px;
+                      line-height: 24px;
+                      color: #1a1a1a;
+                    "
+                  >
+                    To proceed with resetting your password, please click the button below. **This link is valid for 1 hour** for your security.
+                  </p>
+
+                  <!-- Button -->
+                  <table cellpadding="0" cellspacing="0" role="presentation">
+                    <tr>
+                      <td style="padding: 16px 0">
+                        <a
+                          href="${resetUrl}"
+                          style="
+                            display: inline-block;
+                            border-radius: 6px;
+                            background-color: #2563eb;
+                            padding: 10px 16px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: #ffffff;
+                            text-decoration: none;
+                          "
+                        >
+                          Reset My Password &rarr;
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <p
+                    style="
+                      margin: 16px 0;
+                      font-size: 16px;
+                      line-height: 24px;
+                      color: #1a1a1a;
+                      font-weight: 700; /* Added emphasis */
+                    "
+                  >
+                    If you did not request a password reset, you can safely ignore this email. Your current password will remain unchanged.
+                  </p>
+                  <p
+                    style="
+                      margin: 16px 0;
+                      font-size: 16px;
+                      line-height: 24px;
+                      color: #1a1a1a;
+                    "
+                  >
+                    Best regards,<br />The P2P Lending Team
+                  </p>
+
+                  <table
+                    style="width: 100%"
+                    cellpadding="0"
+                    cellspacing="0"
+                    role="presentation"
+                  >
+                    <tr>
+                      <td style="padding-top: 24px; padding-bottom: 24px">
+                        <div
+                          style="
+                            height: 1px;
+                            background-color: #e5e7eb;
+                            line-height: 1px;
+                          "
+                        >
+                          &zwnj;
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <p style="margin: 0; font-size: 16px; color: #1a1a1a">
+                    If you have any questions or need assistance, kindly contact
+                    us at:
+                    <a
+                      href="mailto:support@p2papp.com"
+                      class="hover-underline"
+                      style="color: #2563eb; text-decoration: none"
+                      >support@p2papp.com</a
+                    >
+                  </p>
+                </td>
+              </tr>
+              <!-- Footer -->
+              <tr>
+                <td
+                  style="
+                    padding: 32px 24px;
+                    text-align: center;
+                    font-size: 16px;
+                    color: #1a1a1a;
+                  "
+                >
+                  <p style="margin: 0 0 8px">
+                    Security is our top priority.
+                  </p>
+                  <p style="margin: 0; font-style: italic">
+                    &copy; ${new Date().getFullYear()} P2P Lending Platform. All rights reserved.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>
+`;
 
     await sendEmail({
       to: email,
-      subject: "Password Reset Request",
-      html: `
-        <p>You requested a password reset</p>
-        <p>Click this link to reset your password:</p>
-        <a href="${resetUrl}">Reset Password</a>
-        <p>This link will expire in 1 hour.</p>
-      `,
+      subject: "Password Reset Request for Your Account",
+      html: htmlContent,
     });
 
     return successResponse(

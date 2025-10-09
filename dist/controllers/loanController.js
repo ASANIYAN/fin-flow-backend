@@ -1,7 +1,7 @@
 "use strict";
 // src/controllers/loanController.ts
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getMyLoans = exports.getOpenLoans = exports.fundLoan = exports.createLoan = exports.getDashboardData = void 0;
+exports.repayLoan = exports.getMyLoans = exports.getOpenLoans = exports.fundLoan = exports.createLoan = exports.getDashboardData = void 0;
 const loanService_1 = require("../services/loanService");
 const message_1 = require("../utils/message");
 const validation_1 = require("../utils/validation");
@@ -319,3 +319,42 @@ const getMyLoans = async (req, res) => {
     }
 };
 exports.getMyLoans = getMyLoans;
+const repayLoan = async (req, res) => {
+    // The borrower ID comes from the authenticated user token
+    const user = req.user;
+    const loanId = req.params.loanId;
+    const { paymentAmount } = req.body;
+    // 1. Input Validation: paymentAmount must be provided and be a positive number
+    const repaymentSchema = {
+        paymentAmount: { type: "number", required: true, min: 0.01 },
+    };
+    if (!(0, validation_1.validateAndRespond)(req.body, repaymentSchema, res)) {
+        return;
+    }
+    const amount = parseFloat(paymentAmount);
+    try {
+        // 2. Call the service to process the repayment
+        const result = await (0, loanService_1.repayLoanService)(loanId, user.id, amount);
+        return (0, message_1.successResponse)(res, 200, "Loan repayment processed successfully.", result);
+    }
+    catch (error) {
+        console.error("Error processing repayment:", error);
+        if (error instanceof Error) {
+            // 3. Specific Error Handling for Service Constraints
+            // 400 Bad Request: Business rule violations (not borrower, wrong status, wrong amount)
+            if (error.message.includes("Loan not found") ||
+                error.message.includes("User is not the borrower") ||
+                error.message.includes("ACTIVE state") ||
+                error.message.includes("Repayment amount must be exactly")) {
+                return (0, message_1.errorResponse)(res, 400, error.message);
+            }
+            // 402 Payment Required: Insufficient funds in the user's wallet
+            if (error.message.includes("Insufficient available funds")) {
+                return (0, message_1.errorResponse)(res, 402, error.message);
+            }
+        }
+        // 500 Internal Server Error for other unexpected issues
+        return (0, message_1.errorResponse)(res, 500, "An unexpected error occurred during repayment processing.");
+    }
+};
+exports.repayLoan = repayLoan;

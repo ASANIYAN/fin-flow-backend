@@ -1,10 +1,10 @@
 import axios from "axios";
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { TransactionType } from "../../node_modules/.prisma/client";
 import { findUserById } from "./userService";
 import { sleep } from "../utils/utils";
+import prisma from "../lib/prisma";
 
-const prisma = new PrismaClient();
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY as string;
 
 /**

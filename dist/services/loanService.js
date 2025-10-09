@@ -1,8 +1,11 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.repayLoanService = exports.disburseLoanService = exports.getMyLoans = exports.getAllLoansByBorrower = exports.getOpenLoansService = exports.fundLoanService = exports.getLenderDashboardData = exports.getBorrowerDashboardData = exports.createLoanService = void 0;
 const client_1 = require("../../node_modules/.prisma/client");
-const client_2 = require("@prisma/client");
+const prisma_1 = __importDefault(require("../lib/prisma"));
 // Utility function to convert duration to days for consistent calculations
 const convertDurationToDays = (duration, unit) => {
     switch (unit) {
@@ -58,7 +61,6 @@ const calculateTotalInterest = (amountRequested, interestRate, duration, duratio
 };
 const DEFAULT_EARNINGS_RATE = 0.05; // 5% simplified earnings calculation
 const MAX_NEW_LISTINGS = 10;
-const prisma = new client_2.PrismaClient();
 const calculateProgress = (amountFunded, amountRequested) => {
     if (amountRequested === 0)
         return 0;
@@ -74,12 +76,12 @@ const convertDecimalToNumber = (decimal) => {
     return Number(decimal) || 0;
 };
 const getLoanCountByBorrower = async (borrowerId) => {
-    return prisma.loan.count({
+    return prisma_1.default.loan.count({
         where: { borrowerId },
     });
 };
 const getPendingLoanCountByBorrower = async (borrowerId) => {
-    return prisma.loan.count({
+    return prisma_1.default.loan.count({
         where: {
             borrowerId,
             status: client_1.LoanStatus.PENDING,
@@ -87,7 +89,7 @@ const getPendingLoanCountByBorrower = async (borrowerId) => {
     });
 };
 const getActiveLoansByBorrower = async (borrowerId) => {
-    return prisma.loan.findMany({
+    return prisma_1.default.loan.findMany({
         where: {
             borrowerId,
             status: {
@@ -97,7 +99,7 @@ const getActiveLoansByBorrower = async (borrowerId) => {
     });
 };
 const getInvestmentsByLender = async (lenderId) => {
-    return prisma.loan.findMany({
+    return prisma_1.default.loan.findMany({
         where: {
             fundedBy: {
                 some: { id: lenderId },
@@ -110,7 +112,7 @@ const getInvestmentsByLender = async (lenderId) => {
     });
 };
 const getRecentLoanListings = async (limit = MAX_NEW_LISTINGS) => {
-    return prisma.loan.findMany({
+    return prisma_1.default.loan.findMany({
         where: { status: client_1.LoanStatus.PENDING },
         take: limit,
         include: {
@@ -170,7 +172,7 @@ const createLoanService = async (loanData) => {
             connect: { id: loanData.borrowerId },
         },
     };
-    return prisma.loan.create({
+    return prisma_1.default.loan.create({
         data: prismaLoanData,
         include: {
             borrower: {
@@ -239,7 +241,7 @@ exports.getLenderDashboardData = getLenderDashboardData;
  */
 const fundLoanService = async (loanId, lenderId, amount) => {
     const fundingAmountDecimal = amount;
-    return prisma.$transaction(async (tx) => {
+    return prisma_1.default.$transaction(async (tx) => {
         const loan = await tx.loan.findUnique({ where: { id: loanId } });
         const lender = await tx.user.findUnique({
             where: { id: lenderId },
@@ -296,6 +298,14 @@ const fundLoanService = async (loanId, lenderId, amount) => {
                 status: newLoanStatus,
             },
         });
+        if (newLoanStatus === client_1.LoanStatus.FULLY_FUNDED) {
+            // Call the internal disbursement function immediately within the same transaction
+            const disbursementResult = await (0, exports.disburseLoanService)(loanId);
+            return {
+                message: "Loan fully funded and automatically disbursed to borrower.",
+                status: disbursementResult.status,
+            };
+        }
         return { message: "Loan funded successfully.", status: newLoanStatus };
     });
 };
@@ -336,7 +346,7 @@ query, minAmount, maxAmount, sortBy) => {
         orderBy[field] = direction;
     }
     // Fetch the paginated loans
-    const loans = await prisma.loan.findMany({
+    const loans = await prisma_1.default.loan.findMany({
         where,
         skip,
         take: pageSize,
@@ -365,7 +375,7 @@ query, minAmount, maxAmount, sortBy) => {
         orderBy,
     });
     // Get the total count of loans for pagination (without skip/take)
-    const totalCount = await prisma.loan.count({ where });
+    const totalCount = await prisma_1.default.loan.count({ where });
     const totalPages = Math.ceil(totalCount / pageSize);
     // Map and normalize returned loans to plain objects and convert Decimals
     const mappedLoans = loans.map((loan) => ({
@@ -422,13 +432,13 @@ const getAllLoansByBorrower = async (borrowerId, page = 1, pageSize = 10, q, min
             where.status = statusUpper;
         }
     }
-    const loans = await prisma.loan.findMany({
+    const loans = await prisma_1.default.loan.findMany({
         where,
         skip,
         take: pageSize,
         orderBy: { createdAt: "desc" },
     });
-    const totalCount = await prisma.loan.count({ where });
+    const totalCount = await prisma_1.default.loan.count({ where });
     const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
     const mapped = loans.map((loan) => ({
         id: loan.id,
@@ -508,7 +518,7 @@ const getMyLoans = async (userId, page = 1, pageSize = 10, query, minAmount, max
         }
     }
     const [loans, totalCount] = await Promise.all([
-        prisma.loan.findMany({
+        prisma_1.default.loan.findMany({
             where,
             skip,
             take: pageSize,
@@ -532,7 +542,7 @@ const getMyLoans = async (userId, page = 1, pageSize = 10, query, minAmount, max
                 },
             },
         }),
-        prisma.loan.count({ where }),
+        prisma_1.default.loan.count({ where }),
     ]);
     const totalPages = Math.ceil(totalCount / pageSize);
     // Transform loans to include user's role in each loan
@@ -569,7 +579,7 @@ exports.getMyLoans = getMyLoans;
  * 3. Sets the loan status to ACTIVE.
  */
 const disburseLoanService = async (loanId) => {
-    return prisma.$transaction(async (tx) => {
+    return prisma_1.default.$transaction(async (tx) => {
         const loan = await tx.loan.findUnique({ where: { id: loanId } });
         if (!loan)
             throw new Error("Loan not found.");
@@ -640,8 +650,8 @@ exports.disburseLoanService = disburseLoanService;
  * Repayment is only allowed when the loan status is ACTIVE.
  */
 const repayLoanService = async (loanId, borrowerId, paymentAmount) => {
-    const paymentAmountDecimal = paymentAmount;
-    return prisma.$transaction(async (tx) => {
+    const paymentAmountDecimal = paymentAmount; // Using number for Prisma decrement/increment
+    return prisma_1.default.$transaction(async (tx) => {
         // 1. Fetch loan and borrower data
         const loan = await tx.loan.findUnique({
             where: { id: loanId },
@@ -659,9 +669,10 @@ const repayLoanService = async (loanId, borrowerId, paymentAmount) => {
             throw new Error("Loan not found.");
         if (loan.borrowerId !== borrowerId)
             throw new Error("User is not the borrower for this loan.");
-        // Check for ACTIVE status
-        if (loan.status !== client_1.LoanStatus.ACTIVE)
-            throw new Error("Loan is not in an ACTIVE state for repayment.");
+        // IMPORTANT CONSTRAINT 1: Loan must be ACTIVE to be repaid
+        if (loan.status !== client_1.LoanStatus.ACTIVE) {
+            throw new Error("Loan is not in an ACTIVE state for repayment. Status must be ACTIVE.");
+        }
         const borrower = await tx.user.findUnique({
             where: { id: borrowerId },
             select: { availableBalance: true, escrowBalance: true },
@@ -669,15 +680,24 @@ const repayLoanService = async (loanId, borrowerId, paymentAmount) => {
         if (!borrower || borrower.availableBalance.toNumber() < paymentAmount) {
             throw new Error("Insufficient available funds to make repayment.");
         }
-        // 2. DETERMINE INTEREST AND PRINCIPAL PORTIONS (Simplified Amortization)
+        // 2. DETERMINE FIXED INSTALLMENT PORTIONS (Enforcing Exact Payment)
         const totalPeriods = loan.duration;
-        // NOTE: This assumes straight-line interest payment. In a real system, interest accrual must be calculated per period.
-        const interestPerPayment = loan.totalInterest.toNumber() / totalPeriods;
-        if (paymentAmount < interestPerPayment) {
-            throw new Error(`Minimum required payment (interest only) is ${interestPerPayment.toFixed(2)}.`);
+        // Calculate the fixed principal portion per period
+        const principalPerPeriod = loan.amountRequested.toNumber() / totalPeriods;
+        // Calculate the fixed interest portion per period
+        const interestPerPeriod = loan.totalInterest.toNumber() / totalPeriods;
+        // Calculate the exact installment required (rounding to 2 decimal places)
+        // This is the CRITICAL value that must be enforced.
+        const requiredInstallmentAmount = parseFloat((principalPerPeriod + interestPerPeriod).toFixed(2));
+        // Normalize the incoming payment amount for comparison
+        const normalizedPaymentAmount = parseFloat(paymentAmount.toFixed(2));
+        // IMPORTANT CONSTRAINT 2: Exact Payment Amount Check
+        if (normalizedPaymentAmount !== requiredInstallmentAmount) {
+            throw new Error(`Repayment amount must be exactly the required installment of $${requiredInstallmentAmount.toFixed(2)}.`);
         }
-        const principalPortion = paymentAmount - interestPerPayment;
-        const interestPortion = interestPerPayment;
+        // Use the calculated fixed portions for the transaction
+        const principalPortion = principalPerPeriod;
+        const interestPortion = interestPerPeriod;
         // 3. DEBIT BORROWER & UPDATE LOAN STATUS
         await tx.user.update({
             where: { id: borrowerId },
