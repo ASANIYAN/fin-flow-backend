@@ -159,7 +159,7 @@ export const sendVerificationEmail = async (req: Request, res: Response) => {
                       color: #ffffff;
                       text-decoration: none;
                     "
-                  >P2P Platform</span>
+                  >Finflow Platform</span>
                 </td>
               </tr>
             </table>
@@ -295,16 +295,7 @@ export const sendVerificationEmail = async (req: Request, res: Response) => {
                     </tr>
                   </table>
 
-                  <p style="margin: 0; font-size: 16px; color: #1a1a1a">
-                    If you have any questions or need assistance, kindly contact
-                    us at:
-                    <a
-                      href="mailto:support@p2papp.com"
-                      class="hover-underline"
-                      style="color: #2563eb; text-decoration: none"
-                      >support@p2papp.com</a
-                    >
-                  </p>
+                  
                 </td>
               </tr>
               <!-- Footer -->
@@ -524,7 +515,7 @@ export const signup = async (req: Request, res: Response) => {
                       color: #ffffff;
                       text-decoration: none;
                     "
-                  >P2P Platform</span>
+                  >Finflow Platform</span>
                 </td>
               </tr>
             </table>
@@ -660,16 +651,7 @@ export const signup = async (req: Request, res: Response) => {
                     </tr>
                   </table>
 
-                  <p style="margin: 0; font-size: 16px; color: #1a1a1a">
-                    If you have any questions or need assistance, kindly contact
-                    us at:
-                    <a
-                      href="mailto:support@p2papp.com"
-                      class="hover-underline"
-                      style="color: #2563eb; text-decoration: none"
-                      >support@p2papp.com</a
-                    >
-                  </p>
+                  
                 </td>
               </tr>
               <!-- Footer -->
@@ -962,7 +944,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
                       color: #ffffff;
                       text-decoration: none;
                     "
-                  >P2P Platform</span>
+                  >Finflow Platform</span>
                 </td>
               </tr>
             </table>
@@ -1086,16 +1068,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
                     </tr>
                   </table>
 
-                  <p style="margin: 0; font-size: 16px; color: #1a1a1a">
-                    If you have any questions or need assistance, kindly contact
-                    us at:
-                    <a
-                      href="mailto:support@p2papp.com"
-                      class="hover-underline"
-                      style="color: #2563eb; text-decoration: none"
-                      >support@p2papp.com</a
-                    >
-                  </p>
+                  
                 </td>
               </tr>
               <!-- Footer -->
