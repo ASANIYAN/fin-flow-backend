@@ -519,7 +519,7 @@ router.get("/open", authenticateToken, requireEmailVerification, getOpenLoans);
  *       - BearerAuth: []
  *     description: |
  *       Allows the borrower to make repayments towards their active loans.
- *       Supports both partial and full repayments. The borrower can only repay their own loans.
+ *       Supports only full repayments. The borrower can only repay their own loans.
  *       Repayments are deducted from the borrower's available balance and distributed to lenders.
  *     parameters:
  *       - in: path
@@ -552,10 +552,10 @@ router.get("/open", authenticateToken, requireEmailVerification, getOpenLoans);
  *                 example: "Monthly repayment installment #3"
  *           examples:
  *             partial_repayment:
- *               summary: Partial repayment
+ *               summary: Repayment
  *               value:
  *                 amount: 2500.00
- *                 description: "Partial repayment for June"
+ *                 description: "Repayment for June"
  *             full_repayment:
  *               summary: Full loan repayment
  *               value:
@@ -595,7 +595,7 @@ router.get("/open", authenticateToken, requireEmailVerification, getOpenLoans);
  *                           description: Whether the loan is now fully repaid
  *             examples:
  *               partial_repayment_success:
- *                 summary: Successful partial repayment
+ *                 summary: Successful Repayment
  *                 value:
  *                   success: true
  *                   message: "Repayment processed successfully"

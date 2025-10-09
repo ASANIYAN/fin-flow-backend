@@ -48,7 +48,12 @@ const router = (0, express_1.Router)();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/dashboard", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.getDashboardData);
+router.get(
+  "/dashboard",
+  authMiddleware_1.authenticateToken,
+  authMiddleware_1.requireEmailVerification,
+  loanController_1.getDashboardData
+);
 /**
  * @swagger
  * /api/loans/create-loan:
@@ -101,7 +106,12 @@ router.get("/dashboard", authMiddleware_1.authenticateToken, authMiddleware_1.re
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/create-loan", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.createLoan);
+router.post(
+  "/create-loan",
+  authMiddleware_1.authenticateToken,
+  authMiddleware_1.requireEmailVerification,
+  loanController_1.createLoan
+);
 /**
  * @swagger
  * /api/loans/my-loans:
@@ -231,7 +241,12 @@ router.post("/create-loan", authMiddleware_1.authenticateToken, authMiddleware_1
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/my-loans", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.getMyLoans);
+router.get(
+  "/my-loans",
+  authMiddleware_1.authenticateToken,
+  authMiddleware_1.requireEmailVerification,
+  loanController_1.getMyLoans
+);
 /**
  * @swagger
  * /api/loans/{id}/fund:
@@ -294,8 +309,12 @@ router.get("/my-loans", authMiddleware_1.authenticateToken, authMiddleware_1.req
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/:id/fund", // The loan ID is passed as a URL parameter
-authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.fundLoan);
+router.post(
+  "/:id/fund", // The loan ID is passed as a URL parameter
+  authMiddleware_1.authenticateToken,
+  authMiddleware_1.requireEmailVerification,
+  loanController_1.fundLoan
+);
 /**
  * @swagger
  * /api/loans/open:
@@ -474,7 +493,12 @@ authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, l
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/open", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.getOpenLoans);
+router.get(
+  "/open",
+  authMiddleware_1.authenticateToken,
+  authMiddleware_1.requireEmailVerification,
+  loanController_1.getOpenLoans
+);
 /**
  * @swagger
  * /api/loans/{loanId}/repay:
@@ -485,7 +509,7 @@ router.get("/open", authMiddleware_1.authenticateToken, authMiddleware_1.require
  *       - BearerAuth: []
  *     description: |
  *       Allows the borrower to make repayments towards their active loans.
- *       Supports both partial and full repayments. The borrower can only repay their own loans.
+ *       Supports only full repayments. The borrower can only repay their own loans.
  *       Repayments are deducted from the borrower's available balance and distributed to lenders.
  *     parameters:
  *       - in: path
@@ -518,10 +542,10 @@ router.get("/open", authMiddleware_1.authenticateToken, authMiddleware_1.require
  *                 example: "Monthly repayment installment #3"
  *           examples:
  *             partial_repayment:
- *               summary: Partial repayment
+ *               summary: Repayment
  *               value:
  *                 amount: 2500.00
- *                 description: "Partial repayment for June"
+ *                 description: "Repayment for June"
  *             full_repayment:
  *               summary: Full loan repayment
  *               value:
@@ -561,7 +585,7 @@ router.get("/open", authMiddleware_1.authenticateToken, authMiddleware_1.require
  *                           description: Whether the loan is now fully repaid
  *             examples:
  *               partial_repayment_success:
- *                 summary: Successful partial repayment
+ *                 summary: Successful Repayment
  *                 value:
  *                   success: true
  *                   message: "Repayment processed successfully"
@@ -669,5 +693,9 @@ router.get("/open", authMiddleware_1.authenticateToken, authMiddleware_1.require
  *                   error:
  *                     code: "INTERNAL_ERROR"
  */
-router.post("/:loanId/repay", authMiddleware_1.authenticateToken, loanController_1.repayLoan);
+router.post(
+  "/:loanId/repay",
+  authMiddleware_1.authenticateToken,
+  loanController_1.repayLoan
+);
 exports.default = router;
