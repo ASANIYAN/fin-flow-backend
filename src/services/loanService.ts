@@ -434,17 +434,26 @@ export const fundLoanService = async (
   lenderId: string,
   amount: number
 ) => {
-  const fundingAmountDecimal = amount;
+  const fundingAmountDecimal = new Prisma.Decimal(amount);
 
-  return prisma.$transaction(async (tx: any) => {
-    const loan = await tx.loan.findUnique({ where: { id: loanId } });
-    const lender = await tx.user.findUnique({
-      where: { id: lenderId },
-      select: { availableBalance: true, escrowBalance: true },
-    });
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    // We use findUniqueOrThrow to ensure the record exists and to throw an error
+    // that Prisma can catch and roll back the transaction.
+    const loan = await tx.loan
+      .findUniqueOrThrow({ where: { id: loanId } })
+      .catch(() => {
+        throw new Error("Loan not found.");
+      });
+    const lender = await tx.user
+      .findUniqueOrThrow({
+        where: { id: lenderId },
+        select: { availableBalance: true, escrowBalance: true },
+      })
+      .catch(() => {
+        throw new Error("Lender not found.");
+      });
 
-    if (!loan) throw new Error("Loan not found.");
-    if (!lender) throw new Error("Lender not found.");
+    // --- Validation Checks ---
 
     // SELF-FUNDING GATE: Prevent users from funding their own loans
     if (loan.borrowerId === lenderId) {
@@ -466,11 +475,17 @@ export const fundLoanService = async (
       throw new Error("Loan is already fully funded or active.");
     }
 
+    // Calculate the actual funding amount, capped by remaining amount
     const remainingAmount =
       loan.amountRequested.toNumber() - loan.amountFunded.toNumber();
     const fundingAmount = Math.min(amount, remainingAmount);
 
     if (fundingAmount <= 0) throw new Error("Loan is already fully funded.");
+
+    // Store the state read at the start of the transaction for Optimistic Locking
+    const originalAmountFunded = loan.amountFunded;
+
+    // --- Atomic State Changes ---
 
     // 1. Debit the lender's AVAILABLE balance and credit their ESCROW balance
     await tx.user.update({
@@ -492,20 +507,35 @@ export const fundLoanService = async (
       },
     });
 
-    // 3. Update the loan's funded amount and status
-    const newAmountFunded = loan.amountFunded.toNumber() + fundingAmount;
+    // 3. CRITICAL: Update the loan's funded amount and status using Optimistic Locking
+    // We check that the amountFunded is STILL the original amount read.
+    // If another transaction modified it, this update will fail (zero rows affected).
+    const newAmountFunded = originalAmountFunded.toNumber() + fundingAmount;
     let newLoanStatus =
       newAmountFunded >= loan.amountRequested.toNumber()
         ? LoanStatus.FULLY_FUNDED
         : LoanStatus.FUNDING;
 
-    await tx.loan.update({
-      where: { id: loanId },
+    // Use `updateMany` for conditional update based on the original state
+    const updateResult = await tx.loan.updateMany({
+      where: {
+        id: loanId,
+        // OPTIMISTIC LOCKING: Ensure the funded amount hasn't changed since we read it.
+        amountFunded: originalAmountFunded,
+      },
       data: {
         amountFunded: newAmountFunded,
         status: newLoanStatus,
       },
     });
+
+    // If no row was updated, it means another transaction modified the loan concurrently (race condition won).
+    if (updateResult.count === 0) {
+      // Throw an error to roll back the entire transaction (debit and transaction create)
+      throw new Error(
+        "Loan state changed concurrently. Please try funding again."
+      );
+    }
 
     if (newLoanStatus === LoanStatus.FULLY_FUNDED) {
       // Call the internal disbursement function immediately within the same transaction
@@ -1116,4 +1146,86 @@ export const repayLoanService = async (
       newStatus: newStatus,
     };
   });
+};
+
+/**
+ * Fetches all loans funded by a specific user (the lender), with pagination and optional search.
+ * @param lenderId The ID of the user who funded the loan (the authenticated user).
+ * @param page The page number for pagination.
+ * @param pageSize The number of items per page.
+ * @param q Optional search query string to filter by loan title or description.
+ * @returns An object containing the paginated list of loans and total counts.
+ */
+export const getFundedLoansByLenderService = async (
+  lenderId: string,
+  page: number = 1,
+  pageSize: number = 10,
+  q?: string
+) => {
+  // Calculate skip for pagination
+  const skip = (page - 1) * pageSize;
+
+  // Build the dynamic 'where' clause for filtering and searching
+  const where: any = {
+    fundedBy: {
+      some: {
+        id: lenderId,
+      },
+    },
+  };
+
+  if (q) {
+    const searchTermUpper = q.toUpperCase();
+    const orConditions: any[] = [
+      { title: { contains: q } },
+      { description: { contains: q } },
+    ];
+
+    // Only add status filters if the search term matches valid enum values
+    const validStatuses = [
+      "PENDING",
+      "FUNDING",
+      "FULLY_FUNDED",
+      "ACTIVE",
+      "REPAID",
+    ];
+
+    if (validStatuses.includes(searchTermUpper)) {
+      orConditions.push({ status: { equals: searchTermUpper } });
+    }
+
+    // Add borrower name search if available
+    orConditions.push({
+      borrower: {
+        OR: [{ firstName: { contains: q } }, { lastName: { contains: q } }],
+      },
+    });
+
+    where.OR = orConditions;
+  }
+
+  // Fetch the paginated and filtered loans
+  const loans = await prisma.loan.findMany({
+    where,
+    skip,
+    take: pageSize,
+    // Include borrower details for context
+    include: {
+      borrower: {
+        select: {
+          firstName: true,
+          lastName: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc", // Sort by most recent loans first
+    },
+  });
+
+  // Get the total count of loans for pagination (without skip/take)
+  const totalCount = await prisma.loan.count({ where });
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  return { loans, totalCount, totalPages };
 };

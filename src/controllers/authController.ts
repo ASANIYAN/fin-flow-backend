@@ -698,6 +698,14 @@ export const signup = async (req: Request, res: Response) => {
 
     return successResponse(res, 201, "User created successfully", userData);
   } catch (error: any) {
+    console.error("Signup error details:", {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+      clientVersion: error.clientVersion,
+    });
+
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
@@ -705,8 +713,31 @@ export const signup = async (req: Request, res: Response) => {
       return errorResponse(res, 409, "Email already in use");
     }
 
+    // Check for Prisma initialization errors
+    if (error.name === "PrismaClientInitializationError") {
+      console.error("Prisma initialization error:", error.message);
+      return errorResponse(
+        res,
+        500,
+        "Database connection error. Please try again later.",
+        {
+          error: {
+            name: error.name,
+            message: error.message,
+            clientVersion: error.clientVersion,
+          },
+        }
+      );
+    }
+
     // Unexpected error during signup
-    return errorResponse(res, 500, "An unexpected error occurred", error);
+    return errorResponse(res, 500, "An unexpected error occurred", {
+      error: {
+        name: error.name,
+        message: error.message,
+        clientVersion: error.clientVersion,
+      },
+    });
   }
 };
 

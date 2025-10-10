@@ -10,6 +10,7 @@ import {
   getAllLoansByBorrower,
   getMyLoans as getMyLoansService,
   repayLoanService,
+  getFundedLoansByLenderService,
 } from "../services/loanService";
 import { errorResponse, successResponse } from "../utils/message";
 import { AuthenticatedRequest } from "../types/auth";
@@ -459,6 +460,69 @@ export const repayLoan = async (req: Request, res: Response) => {
       res,
       500,
       "An unexpected error occurred during repayment processing."
+    );
+  }
+};
+
+export const getFundedLoans = async (req: Request, res: Response) => {
+  const user = (req as AuthenticatedRequest).user;
+  const { page, pageSize, q } = req.query;
+
+  // Define validation schema for query parameters
+  const queryValidationSchema: ValidationSchema = {
+    page: {
+      type: "number",
+      required: false,
+      min: 1,
+    },
+    pageSize: {
+      type: "number",
+      required: false,
+      min: 1,
+      max: 100,
+    },
+    q: {
+      type: "string",
+      required: false,
+      maxLength: 255,
+    },
+  };
+
+  // Validate query parameters
+  const queryData = { page, pageSize, q };
+  if (!validateAndRespond(queryData, queryValidationSchema, res)) {
+    return; // Response already sent by validateAndRespond
+  }
+
+  // Parse query parameters with default values
+  const pageNumber = parseInt(page as string) || 1;
+  const size = parseInt(pageSize as string) || 10;
+  const searchQuery = q as string;
+
+  try {
+    const { loans, totalCount, totalPages } =
+      await getFundedLoansByLenderService(
+        user.id,
+        pageNumber,
+        size,
+        searchQuery
+      );
+
+    return successResponse(res, 200, "Funded loans retrieved successfully", {
+      loans,
+      page: pageNumber,
+      pageSize: size,
+      totalCount,
+      totalPages,
+    });
+  } catch (error) {
+    console.error("Error fetching funded loans:", error);
+
+    // Respond with a 500 status for unexpected server errors
+    return errorResponse(
+      res,
+      500,
+      "An unexpected error occurred while retrieving funded loans"
     );
   }
 };

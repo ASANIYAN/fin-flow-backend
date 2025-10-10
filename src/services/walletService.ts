@@ -21,34 +21,39 @@ export const processVerifiedDeposit = async (
   verifiedAmount: number,
   reference: string
 ) => {
+  // Convert number to Decimal for safe, high-precision storage and operations
+  const depositAmountDecimal = new Prisma.Decimal(verifiedAmount);
+
   return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // 1. Check if the deposit has already been processed by externalRef (unique index)
     const existingTransaction = await tx.transaction.findUnique({
       where: {
         externalRef: reference,
       },
+      select: { id: true }, // Only select ID for existence check
     });
 
     if (existingTransaction) {
-      // If processed, treat as success but prevent double-crediting (idempotency)
-      // Idempotency: transaction already processed
+      // Idempotency: transaction already processed. Early return.
       return;
     }
 
-    // 2. Update the user's wallet balance
+    // Check if user exists (if not, the atomic update below would just fail silently)
     const user = await tx.user.findUnique({
       where: { id: userId },
-      select: { availableBalance: true },
+      select: { id: true },
     });
 
     if (!user) {
       throw new Error("User not found during deposit processing.");
     }
 
-    const newBalance = user.availableBalance.toNumber() + verifiedAmount;
+    // 2. CRITICAL FIX: Update the user's wallet balance using ATOMIC INCREMENT.
+    // This prevents the Read-Modify-Write race condition by letting the database
+    // handle the calculation securely.
     await tx.user.update({
       where: { id: userId },
-      data: { availableBalance: newBalance },
+      data: { availableBalance: { increment: depositAmountDecimal } },
     });
 
     // 3. Create a transaction record with the unique external reference
@@ -58,7 +63,7 @@ export const processVerifiedDeposit = async (
         amount: verifiedAmount,
         type: "DEPOSIT",
         description: `Deposit via Paystack, Ref: ${reference}`,
-        externalRef: reference, // Save the unique external reference
+        externalRef: reference, // Save the unique external reference (for idempotency)
       },
     });
   });
@@ -68,6 +73,7 @@ export const processVerifiedDeposit = async (
  * * Handles the server-side verification request initiated by the frontend callback.
  * This ONLY confirms the payment status and logs the intent, it does NOT update the balance.
  */
+
 export const confirmDepositAttemptService = async (
   userId: string,
   amount: number,
