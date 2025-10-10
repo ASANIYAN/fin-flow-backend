@@ -1,17 +1,9 @@
 "use strict";
-var __importDefault =
-  (this && this.__importDefault) ||
-  function (mod) {
-    return mod && mod.__esModule ? mod : { default: mod };
-  };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetPassword =
-  exports.forgotPassword =
-  exports.login =
-  exports.verifyEmail =
-  exports.signup =
-  exports.sendVerificationEmail =
-    void 0;
+exports.resetPassword = exports.forgotPassword = exports.login = exports.verifyEmail = exports.signup = exports.sendVerificationEmail = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 // Import Prisma for error handling - use the main client types since they're the same
 const message_1 = require("../utils/message");
@@ -20,29 +12,25 @@ const userService_1 = require("../services/userService");
 const validation_1 = require("../utils/validation");
 const client_1 = require("@prisma/client");
 const sendVerificationEmail = async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) {
-      return (0, message_1.errorResponse)(res, 400, "Email is required");
-    }
-    const user = await (0, userService_1.findUserByEmail)(email);
-    if (!user) {
-      return (0, message_1.errorResponse)(res, 404, "User not found");
-    }
-    if (user.isEmailVerified) {
-      return (0, message_1.errorResponse)(
-        res,
-        400,
-        "Email is already verified"
-      );
-    }
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${user.verificationToken}`;
-    const currentDate = new Date().toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    const htmlContent = `
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return (0, message_1.errorResponse)(res, 400, "Email is required");
+        }
+        const user = await (0, userService_1.findUserByEmail)(email);
+        if (!user) {
+            return (0, message_1.errorResponse)(res, 404, "User not found");
+        }
+        if (user.isEmailVerified) {
+            return (0, message_1.errorResponse)(res, 400, "Email is already verified");
+        }
+        const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${user.verificationToken}&email=${email}`;
+        const currentDate = new Date().toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        });
+        const htmlContent = `
 <!DOCTYPE html>
 <html
   lang="en"
@@ -110,7 +98,7 @@ const sendVerificationEmail = async (req, res) => {
       padding: 0;
       word-break: break-word;
       -webkit-font-smoothing: antialiased;
-      background-color: #f0f4f9;
+      background-color: oklch(98.5% 0.002 247.839);
     "
   >
     <div style="display: none">Please confirm your email address</div>
@@ -134,7 +122,7 @@ const sendVerificationEmail = async (req, res) => {
           <td
             align="center"
             style="
-              background-color: #4d31ee;
+              background-color: #2563eb;
               padding-top: 24px;
               padding-bottom: 24px;
             "
@@ -228,7 +216,7 @@ const sendVerificationEmail = async (req, res) => {
                           style="
                             display: inline-block;
                             border-radius: 6px;
-                            background-color: #4d31ee;
+                            background-color: #2563eb;
                             padding: 10px 16px;
                             font-size: 14px;
                             font-weight: 600;
@@ -251,7 +239,7 @@ const sendVerificationEmail = async (req, res) => {
                     "
                   >
                     If the button above does not work, please copy and paste the following URL into your web browser:
-                    <br><a href="${verificationUrl}" class="hover-underline" style="color: #4d31ee; text-decoration: underline; word-break: break-all;">${verificationUrl}</a>
+                    <br><a href="${verificationUrl}" class="hover-underline" style="color: #2563eb; text-decoration: underline; word-break: break-all;">${verificationUrl}</a>
                   </p>
 
                   <p
@@ -316,97 +304,82 @@ const sendVerificationEmail = async (req, res) => {
   </body>
 </html>
 `;
-    await (0, emailService_1.sendEmail)({
-      to: user.email,
-      subject: "Verify Your Email Address",
-      html: htmlContent,
-    });
-    return (0, message_1.successResponse)(
-      res,
-      200,
-      "Verification email sent successfully"
-    );
-  } catch (error) {
-    // Unexpected error in sendVerificationEmail
-    return (0, message_1.errorResponse)(
-      res,
-      500,
-      "An unexpected error occurred",
-      error
-    );
-  }
+        await (0, emailService_1.sendEmail)({
+            to: user.email,
+            subject: "Verify Your Email Address",
+            html: htmlContent,
+        });
+        return (0, message_1.successResponse)(res, 200, "Verification email sent successfully");
+    }
+    catch (error) {
+        // Unexpected error in sendVerificationEmail
+        return (0, message_1.errorResponse)(res, 500, "An unexpected error occurred", error);
+    }
 };
 exports.sendVerificationEmail = sendVerificationEmail;
 const signup = async (req, res) => {
-  const { email, password, confirmPassword, firstName, lastName } = req.body;
-  // Define validation schema for signup
-  const signupValidationSchema = {
-    email: {
-      type: "string",
-      required: true,
-      minLength: 5,
-      maxLength: 255,
-    },
-    password: {
-      type: "string",
-      required: true,
-      minLength: 8,
-      maxLength: 128,
-    },
-    confirmPassword: {
-      type: "string",
-      required: true,
-      minLength: 8,
-      maxLength: 128,
-    },
-    firstName: {
-      type: "string",
-      required: true,
-      minLength: 1,
-      maxLength: 50,
-    },
-    lastName: {
-      type: "string",
-      required: true,
-      minLength: 1,
-      maxLength: 50,
-    },
-  };
-  // Validate request data
-  if (
-    !(0, validation_1.validateAndRespond)(req.body, signupValidationSchema, res)
-  ) {
-    return; // Response already sent by validateAndRespond
-  }
-  // Additional validation for password confirmation
-  if (password !== confirmPassword) {
-    return (0, message_1.errorResponse)(res, 400, "Passwords do not match", {
-      code: "VALIDATION_ERROR",
-      fields: [
-        {
-          field: "confirmPassword",
-          message: "Password confirmation does not match the password",
-          expectedType: "string",
-          receivedType: "string",
+    const { email, password, confirmPassword, firstName, lastName } = req.body;
+    // Define validation schema for signup
+    const signupValidationSchema = {
+        email: {
+            type: "string",
+            required: true,
+            minLength: 5,
+            maxLength: 255,
         },
-      ],
-    });
-  }
-  try {
-    const newUser = await (0, userService_1.createUser)(
-      email,
-      password,
-      firstName,
-      lastName
-    );
-    // Send verification email
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${newUser.verificationToken}`;
-    const currentDate = new Date().toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    const htmlContent = `
+        password: {
+            type: "string",
+            required: true,
+            minLength: 8,
+            maxLength: 128,
+        },
+        confirmPassword: {
+            type: "string",
+            required: true,
+            minLength: 8,
+            maxLength: 128,
+        },
+        firstName: {
+            type: "string",
+            required: true,
+            minLength: 1,
+            maxLength: 50,
+        },
+        lastName: {
+            type: "string",
+            required: true,
+            minLength: 1,
+            maxLength: 50,
+        },
+    };
+    // Validate request data
+    if (!(0, validation_1.validateAndRespond)(req.body, signupValidationSchema, res)) {
+        return; // Response already sent by validateAndRespond
+    }
+    // Additional validation for password confirmation
+    if (password !== confirmPassword) {
+        return (0, message_1.errorResponse)(res, 400, "Passwords do not match", {
+            code: "VALIDATION_ERROR",
+            fields: [
+                {
+                    field: "confirmPassword",
+                    message: "Password confirmation does not match the password",
+                    expectedType: "string",
+                    receivedType: "string",
+                },
+            ],
+        });
+    }
+    try {
+        const newUser = await (0, userService_1.createUser)(email, password, firstName, lastName);
+        // Send verification email
+        const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${newUser.verificationToken}&email=${email}`;
+        const currentDate = new Date().toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        });
+        const htmlContent = `
 <!DOCTYPE html>
 <html
   lang="en"
@@ -474,7 +447,7 @@ const signup = async (req, res) => {
       padding: 0;
       word-break: break-word;
       -webkit-font-smoothing: antialiased;
-      background-color: #f0f4f9;
+      background-color: oklch(98.5% 0.002 247.839);
     "
   >
     <div style="display: none">Please confirm your email address</div>
@@ -498,7 +471,7 @@ const signup = async (req, res) => {
           <td
             align="center"
             style="
-              background-color: #4d31ee;
+              background-color: #2563eb;
               padding-top: 24px;
               padding-bottom: 24px;
             "
@@ -592,7 +565,7 @@ const signup = async (req, res) => {
                           style="
                             display: inline-block;
                             border-radius: 6px;
-                            background-color: #4d31ee;
+                            background-color: #2563eb;
                             padding: 10px 16px;
                             font-size: 14px;
                             font-weight: 600;
@@ -615,7 +588,7 @@ const signup = async (req, res) => {
                     "
                   >
                     If the button above does not work, please copy and paste the following URL into your web browser:
-                    <br><a href="${verificationUrl}" class="hover-underline" style="color: #4d31ee; text-decoration: underline; word-break: break-all;">${verificationUrl}</a>
+                    <br><a href="${verificationUrl}" class="hover-underline" style="color: #2563eb; text-decoration: underline; word-break: break-all;">${verificationUrl}</a>
                   </p>
 
                   <p
@@ -680,181 +653,128 @@ const signup = async (req, res) => {
   </body>
 </html>
 `;
-    await (0, emailService_1.sendEmail)({
-      to: newUser.email,
-      subject: "Verify Your Email Address",
-      html: htmlContent,
-    });
-    const userData = {
-      id: newUser.id,
-      email: newUser.email,
-      firstName: newUser.firstName,
-      lastName: newUser.lastName,
-      isEmailVerified: newUser.isEmailVerified,
-    };
-    return (0, message_1.successResponse)(
-      res,
-      201,
-      "User created successfully",
-      userData
-    );
-  } catch (error) {
-    if (
-      error instanceof client_1.Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      return (0, message_1.errorResponse)(res, 409, "Email already in use");
+        await (0, emailService_1.sendEmail)({
+            to: newUser.email,
+            subject: "Verify Your Email Address",
+            html: htmlContent,
+        });
+        const userData = {
+            id: newUser.id,
+            email: newUser.email,
+            firstName: newUser.firstName,
+            lastName: newUser.lastName,
+            isEmailVerified: newUser.isEmailVerified,
+        };
+        return (0, message_1.successResponse)(res, 201, "User created successfully", userData);
     }
-    // Unexpected error during signup
-    return (0, message_1.errorResponse)(
-      res,
-      500,
-      "An unexpected error occurred",
-      error
-    );
-  }
+    catch (error) {
+        if (error instanceof client_1.Prisma.PrismaClientKnownRequestError &&
+            error.code === "P2002") {
+            return (0, message_1.errorResponse)(res, 409, "Email already in use");
+        }
+        // Unexpected error during signup
+        return (0, message_1.errorResponse)(res, 500, "An unexpected error occurred", error);
+    }
 };
 exports.signup = signup;
 const verifyEmail = async (req, res) => {
-  try {
-    const { token } = req.params;
-    const user = await (0, userService_1.findUserByVerificationToken)(token);
-    if (!user) {
-      return (0, message_1.errorResponse)(
-        res,
-        400,
-        "Invalid or expired verification token."
-      );
+    try {
+        const { token } = req.params;
+        const user = await (0, userService_1.findUserByVerificationToken)(token);
+        if (!user) {
+            return (0, message_1.errorResponse)(res, 400, "Invalid or expired verification token.");
+        }
+        await (0, userService_1.verifyUser)(user.id);
+        // Return success response for frontend to handle redirection
+        return (0, message_1.successResponse)(res, 200, "Email verified successfully");
     }
-    await (0, userService_1.verifyUser)(user.id);
-    // Return success response for frontend to handle redirection
-    return (0, message_1.successResponse)(
-      res,
-      200,
-      "Email verified successfully"
-    );
-  } catch (error) {
-    // Unexpected error during verifyEmail
-    return (0, message_1.errorResponse)(
-      res,
-      500,
-      "An unexpected error occurred",
-      error
-    );
-  }
+    catch (error) {
+        // Unexpected error during verifyEmail
+        return (0, message_1.errorResponse)(res, 500, "An unexpected error occurred", error);
+    }
 };
 exports.verifyEmail = verifyEmail;
 const login = async (req, res) => {
-  // Define validation schema for login
-  const loginValidationSchema = {
-    email: {
-      type: "string",
-      required: true,
-      minLength: 5,
-      maxLength: 255,
-    },
-    password: {
-      type: "string",
-      required: true,
-      minLength: 1,
-    },
-  };
-  // Validate request data
-  if (
-    !(0, validation_1.validateAndRespond)(req.body, loginValidationSchema, res)
-  ) {
-    return; // Response already sent by validateAndRespond
-  }
-  const { email, password } = req.body;
-  try {
-    const user = await (0, userService_1.findUserByEmail)(email);
-    if (!user) {
-      return (0, message_1.errorResponse)(
-        res,
-        401,
-        "Invalid email or password"
-      );
-    }
-    const isMatch = await (0, userService_1.comparePasswords)(
-      password,
-      user.password
-    );
-    if (!isMatch) {
-      return (0, message_1.errorResponse)(
-        res,
-        401,
-        "Invalid email or password"
-      );
-    }
-    // Check if email is verified
-    if (!user.isEmailVerified) {
-      return (0, message_1.errorResponse)(
-        res,
-        403,
-        "Please verify your email address before logging in"
-      );
-    }
-    // Generate JWT with 24 hour expiry
-    const token = jsonwebtoken_1.default.sign(
-      { userId: user.id },
-      process.env.JWT_SECRET,
-      { expiresIn: "24h" } // Token expires in 24 hours
-    );
-    // Decode token to extract issued at and expiry
-    const decoded = jsonwebtoken_1.default.decode(token);
-    const tokenData = decoded || {};
-    // Compute expireAt from token 'exp' claim if present, otherwise fallback to 24h from now
-    const expireAt = tokenData.exp
-      ? new Date(tokenData.exp * 1000).toISOString()
-      : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    const userData = {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      isEmailVerified: user.isEmailVerified,
+    // Define validation schema for login
+    const loginValidationSchema = {
+        email: {
+            type: "string",
+            required: true,
+            minLength: 5,
+            maxLength: 255,
+        },
+        password: {
+            type: "string",
+            required: true,
+            minLength: 1,
+        },
     };
-    return (0, message_1.successResponse)(res, 200, "Login successful", {
-      token: {
-        value: token,
-        expiresAt: expireAt,
-      },
-      user: userData,
-    });
-  } catch (error) {
-    // Unexpected error during login
-    return (0, message_1.errorResponse)(
-      res,
-      500,
-      "An unexpected error occurred",
-      error
-    );
-  }
+    // Validate request data
+    if (!(0, validation_1.validateAndRespond)(req.body, loginValidationSchema, res)) {
+        return; // Response already sent by validateAndRespond
+    }
+    const { email, password } = req.body;
+    try {
+        const user = await (0, userService_1.findUserByEmail)(email);
+        if (!user) {
+            return (0, message_1.errorResponse)(res, 401, "Invalid email or password");
+        }
+        const isMatch = await (0, userService_1.comparePasswords)(password, user.password);
+        if (!isMatch) {
+            return (0, message_1.errorResponse)(res, 401, "Invalid email or password");
+        }
+        // Check if email is verified
+        if (!user.isEmailVerified) {
+            return (0, message_1.errorResponse)(res, 403, "Please verify your email address before logging in");
+        }
+        // Generate JWT with 24 hour expiry
+        const token = jsonwebtoken_1.default.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: "24h" } // Token expires in 24 hours
+        );
+        // Decode token to extract issued at and expiry
+        const decoded = jsonwebtoken_1.default.decode(token);
+        const tokenData = decoded || {};
+        // Compute expireAt from token 'exp' claim if present, otherwise fallback to 24h from now
+        const expireAt = tokenData.exp
+            ? new Date(tokenData.exp * 1000).toISOString()
+            : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        const userData = {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            isEmailVerified: user.isEmailVerified,
+        };
+        return (0, message_1.successResponse)(res, 200, "Login successful", {
+            token: {
+                value: token,
+                expiresAt: expireAt,
+            },
+            user: userData,
+        });
+    }
+    catch (error) {
+        // Unexpected error during login
+        return (0, message_1.errorResponse)(res, 500, "An unexpected error occurred", error);
+    }
 };
 exports.login = login;
 const forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) {
-      return (0, message_1.errorResponse)(res, 400, "Email is required");
-    }
-    const resetToken = await (0, userService_1.generatePasswordResetToken)(
-      email
-    );
-    if (!resetToken) {
-      return (0, message_1.successResponse)(
-        res,
-        200,
-        "If a user with that email exists, a password reset link has been sent."
-      );
-    }
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${email}`;
-    const currentDate = new Date().toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    const htmlContent = `
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return (0, message_1.errorResponse)(res, 400, "Email is required");
+        }
+        const resetToken = await (0, userService_1.generatePasswordResetToken)(email);
+        if (!resetToken) {
+            return (0, message_1.successResponse)(res, 200, "If a user with that email exists, a password reset link has been sent.");
+        }
+        const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${email}`;
+        const currentDate = new Date().toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        });
+        const htmlContent = `
 <!DOCTYPE html>
 <html
   lang="en"
@@ -922,7 +842,7 @@ const forgotPassword = async (req, res) => {
       padding: 0;
       word-break: break-word;
       -webkit-font-smoothing: antialiased;
-      background-color: #f0f4f9;
+      background-color: oklch(98.5% 0.002 247.839);
     "
   >
     <div style="display: none">Password Reset for Your Account</div>
@@ -946,7 +866,7 @@ const forgotPassword = async (req, res) => {
           <td
             align="center"
             style="
-              background-color: #4d31ee;
+              background-color: #2563eb;
               padding-top: 24px;
               padding-bottom: 24px;
             "
@@ -1029,7 +949,7 @@ const forgotPassword = async (req, res) => {
                           style="
                             display: inline-block;
                             border-radius: 6px;
-                            background-color: #4d31ee;
+                            background-color: #2563eb;
                             padding: 10px 16px;
                             font-size: 14px;
                             font-weight: 600;
@@ -1115,61 +1035,34 @@ const forgotPassword = async (req, res) => {
   </body>
 </html>
 `;
-    await (0, emailService_1.sendEmail)({
-      to: email,
-      subject: "Password Reset Request for Your Account",
-      html: htmlContent,
-    });
-    return (0, message_1.successResponse)(
-      res,
-      200,
-      "If a user with that email exists, a password reset link has been sent."
-    );
-  } catch (error) {
-    // Unexpected error during forgotPassword
-    return (0, message_1.errorResponse)(
-      res,
-      500,
-      "An unexpected error occurred",
-      error
-    );
-  }
+        await (0, emailService_1.sendEmail)({
+            to: email,
+            subject: "Password Reset Request for Your Account",
+            html: htmlContent,
+        });
+        return (0, message_1.successResponse)(res, 200, "If a user with that email exists, a password reset link has been sent.");
+    }
+    catch (error) {
+        // Unexpected error during forgotPassword
+        return (0, message_1.errorResponse)(res, 500, "An unexpected error occurred", error);
+    }
 };
 exports.forgotPassword = forgotPassword;
 const resetPassword = async (req, res) => {
-  try {
-    const { token, newPassword } = req.body;
-    if (!token || !newPassword) {
-      return (0, message_1.errorResponse)(
-        res,
-        400,
-        "Token and password are required"
-      );
+    try {
+        const { token, newPassword } = req.body;
+        if (!token || !newPassword) {
+            return (0, message_1.errorResponse)(res, 400, "Token and password are required");
+        }
+        const updatedUser = await (0, userService_1.resetUserPassword)(token, newPassword);
+        if (!updatedUser) {
+            return (0, message_1.errorResponse)(res, 400, "Invalid or expired password reset token.");
+        }
+        return (0, message_1.successResponse)(res, 200, "Password reset successful.");
     }
-    const updatedUser = await (0, userService_1.resetUserPassword)(
-      token,
-      newPassword
-    );
-    if (!updatedUser) {
-      return (0, message_1.errorResponse)(
-        res,
-        400,
-        "Invalid or expired password reset token."
-      );
+    catch (error) {
+        // Unexpected error during resetPassword
+        return (0, message_1.errorResponse)(res, 500, "An unexpected error occurred", error);
     }
-    return (0, message_1.successResponse)(
-      res,
-      200,
-      "Password reset successful."
-    );
-  } catch (error) {
-    // Unexpected error during resetPassword
-    return (0, message_1.errorResponse)(
-      res,
-      500,
-      "An unexpected error occurred",
-      error
-    );
-  }
 };
 exports.resetPassword = resetPassword;

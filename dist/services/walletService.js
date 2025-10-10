@@ -5,7 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.withdrawFundsService = exports.confirmDepositAttemptService = exports.processVerifiedDeposit = void 0;
 const axios_1 = __importDefault(require("axios"));
-const client_1 = require("../../node_modules/.prisma/client");
+const client_1 = require("@prisma/client");
+const client_2 = require("../../node_modules/.prisma/client");
 const userService_1 = require("./userService");
 const utils_1 = require("../utils/utils");
 const prisma_1 = __importDefault(require("../lib/prisma"));
@@ -20,30 +21,34 @@ const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
  * @param externalRef The reference from Paystack.
  */
 const processVerifiedDeposit = async (userId, verifiedAmount, reference) => {
+    // Convert number to Decimal for safe, high-precision storage and operations
+    const depositAmountDecimal = new client_1.Prisma.Decimal(verifiedAmount);
     return prisma_1.default.$transaction(async (tx) => {
         // 1. Check if the deposit has already been processed by externalRef (unique index)
         const existingTransaction = await tx.transaction.findUnique({
             where: {
                 externalRef: reference,
             },
+            select: { id: true }, // Only select ID for existence check
         });
         if (existingTransaction) {
-            // If processed, treat as success but prevent double-crediting (idempotency)
-            // Idempotency: transaction already processed
+            // Idempotency: transaction already processed. Early return.
             return;
         }
-        // 2. Update the user's wallet balance
+        // Check if user exists (if not, the atomic update below would just fail silently)
         const user = await tx.user.findUnique({
             where: { id: userId },
-            select: { availableBalance: true },
+            select: { id: true },
         });
         if (!user) {
             throw new Error("User not found during deposit processing.");
         }
-        const newBalance = user.availableBalance.toNumber() + verifiedAmount;
+        // 2. CRITICAL FIX: Update the user's wallet balance using ATOMIC INCREMENT.
+        // This prevents the Read-Modify-Write race condition by letting the database
+        // handle the calculation securely.
         await tx.user.update({
             where: { id: userId },
-            data: { availableBalance: newBalance },
+            data: { availableBalance: { increment: depositAmountDecimal } },
         });
         // 3. Create a transaction record with the unique external reference
         await tx.transaction.create({
@@ -52,7 +57,7 @@ const processVerifiedDeposit = async (userId, verifiedAmount, reference) => {
                 amount: verifiedAmount,
                 type: "DEPOSIT",
                 description: `Deposit via Paystack, Ref: ${reference}`,
-                externalRef: reference, // Save the unique external reference
+                externalRef: reference, // Save the unique external reference (for idempotency)
             },
         });
     });
@@ -171,7 +176,7 @@ const withdrawFundsService = async (userId, amount, accountNumber, bankCode) => 
             data: {
                 userId: userId,
                 amount: amount,
-                type: client_1.TransactionType.WITHDRAWAL,
+                type: client_2.TransactionType.WITHDRAWAL,
                 description: `Withdrawal, Ref: ${transferReference}`,
             },
         });

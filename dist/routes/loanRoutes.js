@@ -48,12 +48,7 @@ const router = (0, express_1.Router)();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get(
-  "/dashboard",
-  authMiddleware_1.authenticateToken,
-  authMiddleware_1.requireEmailVerification,
-  loanController_1.getDashboardData
-);
+router.get("/dashboard", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.getDashboardData);
 /**
  * @swagger
  * /api/loans/create-loan:
@@ -106,12 +101,7 @@ router.get(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post(
-  "/create-loan",
-  authMiddleware_1.authenticateToken,
-  authMiddleware_1.requireEmailVerification,
-  loanController_1.createLoan
-);
+router.post("/create-loan", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.createLoan);
 /**
  * @swagger
  * /api/loans/my-loans:
@@ -241,12 +231,7 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get(
-  "/my-loans",
-  authMiddleware_1.authenticateToken,
-  authMiddleware_1.requireEmailVerification,
-  loanController_1.getMyLoans
-);
+router.get("/my-loans", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.getMyLoans);
 /**
  * @swagger
  * /api/loans/{id}/fund:
@@ -309,12 +294,8 @@ router.get(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post(
-  "/:id/fund", // The loan ID is passed as a URL parameter
-  authMiddleware_1.authenticateToken,
-  authMiddleware_1.requireEmailVerification,
-  loanController_1.fundLoan
-);
+router.post("/:id/fund", // The loan ID is passed as a URL parameter
+authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.fundLoan);
 /**
  * @swagger
  * /api/loans/open:
@@ -493,12 +474,7 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get(
-  "/open",
-  authMiddleware_1.authenticateToken,
-  authMiddleware_1.requireEmailVerification,
-  loanController_1.getOpenLoans
-);
+router.get("/open", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.getOpenLoans);
 /**
  * @swagger
  * /api/loans/{loanId}/repay:
@@ -693,9 +669,327 @@ router.get(
  *                   error:
  *                     code: "INTERNAL_ERROR"
  */
-router.post(
-  "/:loanId/repay",
-  authMiddleware_1.authenticateToken,
-  loanController_1.repayLoan
-);
+router.post("/:loanId/repay", authMiddleware_1.authenticateToken, loanController_1.repayLoan);
+/**
+ * @swagger
+ * /api/loans/funded:
+ *   get:
+ *     summary: Get loans funded by the authenticated user
+ *     tags: [Loans]
+ *     security:
+ *       - BearerAuth: []
+ *     description: |
+ *       Returns a paginated list of loans that the authenticated user has funded.
+ *       This endpoint allows lenders to view all their lending investments and track their returns.
+ *       Includes loan details, funding amounts, repayment status, and earnings calculations.
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination
+ *         example: 1
+ *       - in: query
+ *         name: pageSize
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Number of items per page
+ *         example: 10
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PENDING, FUNDING, FULLY_FUNDED, ACTIVE, REPAID]
+ *         description: Filter loans by their current status
+ *         example: "ACTIVE"
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [createdAt_asc, createdAt_desc, amountFunded_asc, amountFunded_desc, interestRate_asc, interestRate_desc]
+ *           default: createdAt_desc
+ *         description: |
+ *           Sort field and order for the funded loans.
+ *           Available options:
+ *           - createdAt_asc/desc: Sort by loan creation date
+ *           - amountFunded_asc/desc: Sort by funding amount
+ *           - interestRate_asc/desc: Sort by loan interest rate
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term to match loan title or borrower name
+ *         example: "business expansion"
+ *     responses:
+ *       200:
+ *         description: Funded loans retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         loans:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                                 format: uuid
+ *                                 description: Unique loan identifier
+ *                               title:
+ *                                 type: string
+ *                                 description: Loan title/purpose
+ *                               description:
+ *                                 type: string
+ *                                 nullable: true
+ *                                 description: Detailed loan description
+ *                               amountRequested:
+ *                                 type: number
+ *                                 format: decimal
+ *                                 description: Total amount requested by borrower
+ *                               amountFunded:
+ *                                 type: number
+ *                                 format: decimal
+ *                                 description: Total amount funded by all lenders
+ *                               myFundingAmount:
+ *                                 type: number
+ *                                 format: decimal
+ *                                 description: Amount funded by the authenticated user
+ *                               interestRate:
+ *                                 type: number
+ *                                 format: decimal
+ *                                 description: Annual interest rate percentage
+ *                               duration:
+ *                                 type: integer
+ *                                 description: Loan duration
+ *                               durationUnit:
+ *                                 type: string
+ *                                 enum: [DAYS, WEEKS, MONTHS, YEARS]
+ *                                 description: Unit for loan duration
+ *                               totalInterest:
+ *                                 type: number
+ *                                 format: decimal
+ *                                 description: Total interest amount for the loan
+ *                               expectedEarnings:
+ *                                 type: number
+ *                                 format: decimal
+ *                                 description: Expected earnings from this funding
+ *                               actualEarnings:
+ *                                 type: number
+ *                                 format: decimal
+ *                                 description: Actual earnings received so far
+ *                               principalRepaid:
+ *                                 type: number
+ *                                 format: decimal
+ *                                 description: Principal amount repaid so far
+ *                               status:
+ *                                 type: string
+ *                                 enum: [PENDING, FUNDING, FULLY_FUNDED, ACTIVE, REPAID]
+ *                                 description: Current loan status
+ *                               borrower:
+ *                                 type: object
+ *                                 properties:
+ *                                   id:
+ *                                     type: string
+ *                                     format: uuid
+ *                                   firstName:
+ *                                     type: string
+ *                                   lastName:
+ *                                     type: string
+ *                                   isEmailVerified:
+ *                                     type: boolean
+ *                                 description: Borrower information
+ *                               fundingDate:
+ *                                 type: string
+ *                                 format: date-time
+ *                                 description: Date when user funded this loan
+ *                               createdAt:
+ *                                 type: string
+ *                                 format: date-time
+ *                                 description: Loan creation date
+ *                               updatedAt:
+ *                                 type: string
+ *                                 format: date-time
+ *                                 description: Last update date
+ *                         pagination:
+ *                           type: object
+ *                           properties:
+ *                             page:
+ *                               type: integer
+ *                               description: Current page number
+ *                             pageSize:
+ *                               type: integer
+ *                               description: Items per page
+ *                             totalCount:
+ *                               type: integer
+ *                               description: Total number of funded loans
+ *                             totalPages:
+ *                               type: integer
+ *                               description: Total number of pages
+ *                         summary:
+ *                           type: object
+ *                           properties:
+ *                             totalFundedAmount:
+ *                               type: number
+ *                               format: decimal
+ *                               description: Total amount funded across all loans
+ *                             totalExpectedEarnings:
+ *                               type: number
+ *                               format: decimal
+ *                               description: Total expected earnings from all funded loans
+ *                             totalActualEarnings:
+ *                               type: number
+ *                               format: decimal
+ *                               description: Total actual earnings received
+ *                             activeLoansCount:
+ *                               type: integer
+ *                               description: Number of currently active funded loans
+ *                             repaidLoansCount:
+ *                               type: integer
+ *                               description: Number of fully repaid funded loans
+ *             examples:
+ *               success:
+ *                 summary: Sample funded loans response
+ *                 value:
+ *                   success: true
+ *                   message: "Funded loans retrieved successfully"
+ *                   data:
+ *                     loans:
+ *                       - id: "123e4567-e89b-12d3-a456-426614174001"
+ *                         title: "Restaurant Equipment Purchase"
+ *                         description: "Need funding to purchase new kitchen equipment"
+ *                         amountRequested: 50000
+ *                         amountFunded: 50000
+ *                         myFundingAmount: 15000
+ *                         interestRate: 12.5
+ *                         duration: 24
+ *                         durationUnit: "MONTHS"
+ *                         totalInterest: 12500
+ *                         expectedEarnings: 3750
+ *                         actualEarnings: 1875
+ *                         principalRepaid: 7500
+ *                         status: "ACTIVE"
+ *                         borrower:
+ *                           id: "789e0123-e89b-12d3-a456-426614174000"
+ *                           firstName: "Jane"
+ *                           lastName: "Smith"
+ *                           isEmailVerified: true
+ *                         fundingDate: "2024-01-15T10:30:00.000Z"
+ *                         createdAt: "2024-01-10T09:00:00.000Z"
+ *                         updatedAt: "2024-02-01T14:22:00.000Z"
+ *                       - id: "456e7890-e12b-34d5-a678-426614174002"
+ *                         title: "Working Capital Loan"
+ *                         description: "Short-term working capital for inventory"
+ *                         amountRequested: 25000
+ *                         amountFunded: 25000
+ *                         myFundingAmount: 5000
+ *                         interestRate: 15.0
+ *                         duration: 12
+ *                         durationUnit: "MONTHS"
+ *                         totalInterest: 3750
+ *                         expectedEarnings: 750
+ *                         actualEarnings: 750
+ *                         principalRepaid: 5000
+ *                         status: "REPAID"
+ *                         borrower:
+ *                           id: "abc1234-e89b-12d3-a456-426614174003"
+ *                           firstName: "Robert"
+ *                           lastName: "Johnson"
+ *                           isEmailVerified: true
+ *                         fundingDate: "2023-12-01T08:15:00.000Z"
+ *                         createdAt: "2023-11-28T16:45:00.000Z"
+ *                         updatedAt: "2024-01-05T11:30:00.000Z"
+ *                     pagination:
+ *                       page: 1
+ *                       pageSize: 10
+ *                       totalCount: 2
+ *                       totalPages: 1
+ *                     summary:
+ *                       totalFundedAmount: 20000
+ *                       totalExpectedEarnings: 4500
+ *                       totalActualEarnings: 2625
+ *                       activeLoansCount: 1
+ *                       repaidLoansCount: 1
+ *       400:
+ *         description: Invalid query parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               invalid_pagination:
+ *                 summary: Invalid pagination parameters
+ *                 value:
+ *                   success: false
+ *                   message: "Validation failed for query parameters"
+ *                   error:
+ *                     code: "VALIDATION_ERROR"
+ *                     fields:
+ *                       - field: "page"
+ *                         message: "Page must be a positive integer"
+ *               invalid_sort:
+ *                 summary: Invalid sort parameter
+ *                 value:
+ *                   success: false
+ *                   message: "Invalid sort parameter"
+ *                   error:
+ *                     code: "VALIDATION_ERROR"
+ *                     fields:
+ *                       - field: "sortBy"
+ *                         message: "Sort field must be one of the allowed values"
+ *       401:
+ *         description: Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               not_authenticated:
+ *                 summary: Missing or invalid authentication token
+ *                 value:
+ *                   success: false
+ *                   message: "Authentication required"
+ *                   error:
+ *                     code: "AUTHENTICATION_REQUIRED"
+ *       403:
+ *         description: Access denied - email verification required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               email_not_verified:
+ *                 summary: Email verification required
+ *                 value:
+ *                   success: false
+ *                   message: "Email verification required to access funded loans"
+ *                   error:
+ *                     code: "EMAIL_NOT_VERIFIED"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               server_error:
+ *                 summary: Database or system error
+ *                 value:
+ *                   success: false
+ *                   message: "An unexpected error occurred while retrieving funded loans"
+ *                   error:
+ *                     code: "INTERNAL_ERROR"
+ */
+router.get("/funded", authMiddleware_1.authenticateToken, loanController_1.getFundedLoans);
 exports.default = router;

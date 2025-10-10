@@ -95,6 +95,7 @@ export const handleWebhook = async (req: Request, res: Response) => {
   // Acknowledge receipt of all other events (like 'transfer.success')
   return successResponse(res, 200, "Event received, no action taken.");
 };
+
 export const getBanks = async (req: Request, res: Response) => {
   try {
     const banks = await listBanks();

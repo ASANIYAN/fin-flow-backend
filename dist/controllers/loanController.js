@@ -1,7 +1,7 @@
 "use strict";
 // src/controllers/loanController.ts
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.repayLoan = exports.getMyLoans = exports.getOpenLoans = exports.fundLoan = exports.createLoan = exports.getDashboardData = void 0;
+exports.getFundedLoans = exports.repayLoan = exports.getMyLoans = exports.getOpenLoans = exports.fundLoan = exports.createLoan = exports.getDashboardData = void 0;
 const loanService_1 = require("../services/loanService");
 const message_1 = require("../utils/message");
 const validation_1 = require("../utils/validation");
@@ -358,3 +358,106 @@ const repayLoan = async (req, res) => {
     }
 };
 exports.repayLoan = repayLoan;
+const getFundedLoans = async (req, res) => {
+    // The authenticated user's ID is attached to the request by the authMiddleware
+    const user = req.user;
+    const { page, pageSize, status, sortBy, search } = req.query;
+    // Define validation schema for query parameters
+    const queryValidationSchema = {
+        page: {
+            type: "number",
+            required: false,
+            min: 1,
+        },
+        pageSize: {
+            type: "number",
+            required: false,
+            min: 1,
+            max: 100,
+        },
+        status: {
+            type: "string",
+            required: false,
+            enum: ["PENDING", "FUNDING", "FULLY_FUNDED", "ACTIVE", "REPAID"],
+        },
+        sortBy: {
+            type: "string",
+            required: false,
+            enum: [
+                "createdAt_asc",
+                "createdAt_desc",
+                "amountFunded_asc",
+                "amountFunded_desc",
+                "interestRate_asc",
+                "interestRate_desc",
+            ],
+        },
+        search: {
+            type: "string",
+            required: false,
+            maxLength: 100,
+        },
+    };
+    // Convert query parameters to appropriate types for validation
+    const queryData = {
+        page: page ? parseInt(page) : undefined,
+        pageSize: pageSize ? parseInt(pageSize) : undefined,
+        status: status,
+        sortBy: sortBy,
+        search: search,
+    };
+    // Validate query parameters
+    if (!(0, validation_1.validateAndRespond)(queryData, queryValidationSchema, res)) {
+        return; // Response already sent by validateAndRespond
+    }
+    try {
+        // Parse query parameters with default values
+        const pageNumber = queryData.page || 1;
+        const size = queryData.pageSize || 10;
+        const searchQuery = queryData.search;
+        // Note: For now, we'll use the basic service function and enhance it later
+        // TODO: Update service to support status filtering and sorting
+        const { loans, totalCount, totalPages } = await (0, loanService_1.getFundedLoansByLenderService)(user.id, pageNumber, size, searchQuery);
+        // Calculate summary data from the loans
+        const summary = {
+            totalFundedAmount: loans.reduce((sum, loan) => {
+                // Since we don't have myFundingAmount in the current service, 
+                // we'll use a placeholder calculation
+                return sum + Number(loan.amountFunded);
+            }, 0),
+            totalExpectedEarnings: loans.reduce((sum, loan) => {
+                // Placeholder calculation for expected earnings
+                return sum + (Number(loan.totalInterest) || 0);
+            }, 0),
+            totalActualEarnings: 0, // Placeholder - would need transaction data
+            activeLoansCount: loans.filter(loan => loan.status === "ACTIVE").length,
+            repaidLoansCount: loans.filter(loan => loan.status === "REPAID").length,
+        };
+        return (0, message_1.successResponse)(res, 200, "Funded loans retrieved successfully", {
+            loans,
+            pagination: {
+                page: pageNumber,
+                pageSize: size,
+                totalCount,
+                totalPages,
+            },
+            summary,
+        });
+    }
+    catch (error) {
+        console.error("Error fetching funded loans:", error);
+        // Handle specific validation errors from service
+        if (error && typeof error === "object" && "code" in error) {
+            const customError = error;
+            if (customError.code === "VALIDATION_ERROR") {
+                return (0, message_1.errorResponse)(res, 400, customError.message, {
+                    code: customError.code,
+                    fields: customError.fields,
+                });
+            }
+        }
+        // Respond with a 500 status for unexpected server errors
+        return (0, message_1.errorResponse)(res, 500, "An unexpected error occurred while retrieving funded loans");
+    }
+};
+exports.getFundedLoans = getFundedLoans;
