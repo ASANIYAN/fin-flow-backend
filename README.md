@@ -2,14 +2,24 @@
 
 ## Project Overview & Features
 
-The **Peer-to-Peer (P2P) Lending API** is a robust, secure backend solution designed to facilitate seamless financial operations in a decentralized lending ecosystem. Built with a focus on scalability, security, and reliability, this API empowers users to engage in P2P loan transactions while ensuring data integrity and compliance with modern financial standards.
+The **Peer-to-Peer (P2P) Lending API** is a robust, secure backend solution designed to facilitate seamless financial operations in a unified P2P lending ecosystem. Built with a focus on scalability, security, and reliability, this API empowers users to participate in peer-to-peer lending as **both borrowers AND lenders** within a single, flexible platform.
+
+### Unified User Model
+
+Unlike traditional P2P platforms that require separate borrower and lender accounts, our system features a **unified user architecture** where:
+
+- **Every user can be both a borrower and a lender** without role restrictions
+- Users can **seamlessly switch between requesting loans and funding others' loans**
+- **Dynamic role assignment** based on user actions rather than static account types
+- **Comprehensive dashboard** showing both borrowing and lending activities in one view
 
 Key features include:
 
-- **User Authentication**: Secure JWT-based authentication with email verification, password reset, and role-based access control.
-- **Profile Management**: Comprehensive user profile handling, including personal details and account verification.
-- **Loan Creation and Management**: Full lifecycle support for creating, approving, and managing P2P loans with interest calculations and repayment tracking.
-- **Real-time Transaction History**: Paginated and searchable transaction logs for transparent financial tracking.
+- **User Authentication**: Secure JWT-based authentication with email verification, password reset, and unified access control.
+- **Flexible Profile Management**: Comprehensive user profile handling supporting dual-role functionality.
+- **Dual-Role Loan Management**: Full lifecycle support for creating loan requests (as borrower) and funding loans (as lender) with interest calculations and repayment tracking.
+- **Unified Transaction History**: Paginated and searchable transaction logs covering both borrowing and lending activities.
+- **Smart Wallet System**: Integrated wallet with available and escrow balance management for secure P2P transactions.
 - **Secure Payment Gateway Integration**: Seamless integration with Paystack for processing payments, webhooks, and account resolution.
 
 ## Architecture & Design
@@ -48,7 +58,9 @@ All tests are written using Jest, with SQLite as the test database for fast, iso
 
 ## API Endpoints
 
-The API provides RESTful endpoints for all core functionalities. Below is a summary of key endpoints:
+The API provides RESTful endpoints for all core functionalities in our unified P2P lending platform. Below is a comprehensive summary of available endpoints:
+
+### Authentication Endpoints
 
 | Method | Endpoint                        | Description                                       |
 | ------ | ------------------------------- | ------------------------------------------------- |
@@ -58,18 +70,53 @@ The API provides RESTful endpoints for all core functionalities. Below is a summ
 | POST   | `/api/auth/resend-verification` | Resend email verification link                    |
 | POST   | `/api/auth/forgot-password`     | Initiate password reset process                   |
 | POST   | `/api/auth/reset-password`      | Reset user password                               |
-| GET    | `/api/user/profile`             | Retrieve user profile information                 |
-| POST   | `/api/loans`                    | Create a new loan request                         |
-| GET    | `/api/loans`                    | List user's loans with pagination                 |
-| GET    | `/api/loans/:id`                | Get details of a specific loan                    |
-| POST   | `/api/loans/:id/repay`          | Process loan repayment                            |
-| POST   | `/api/wallet/fund`              | Fund user wallet via Paystack                     |
-| POST   | `/api/wallet/transfer`          | Transfer funds between users                      |
-| GET    | `/api/paystack/banks`           | Retrieve list of supported banks                  |
-| POST   | `/api/paystack/webhook`         | Handle Paystack webhook for transaction updates   |
-| POST   | `/api/paystack/resolve-account` | Resolve bank account name for transfers           |
 
-The Paystack webhook endpoint (`POST /api/paystack/webhook`) plays a crucial role in maintaining eventual consistency for user balances, processing real-time payment confirmations.
+### User Profile & Account Management
+
+| Method | Endpoint                 | Description                                   |
+| ------ | ------------------------ | --------------------------------------------- |
+| GET    | `/api/user/profile`      | Retrieve user profile information             |
+| PATCH  | `/api/user/profile`      | Update user profile details                   |
+| GET    | `/api/user/transactions` | Get paginated transaction history with search |
+
+### Loan Management (Unified Borrowing & Lending)
+
+| Method | Endpoint                   | Description                                          |
+| ------ | -------------------------- | ---------------------------------------------------- |
+| GET    | `/api/loans/dashboard`     | Get unified dashboard (borrower + lender activities) |
+| POST   | `/api/loans/create-loan`   | Create a new loan request (borrower role)            |
+| GET    | `/api/loans/my-loans`      | List user's loan applications with pagination        |
+| GET    | `/api/loans/open`          | Browse available loans for funding (lender role)     |
+| GET    | `/api/loans/funded`        | View loans you've funded (lender role)               |
+| POST   | `/api/loans/:id/fund`      | Fund a loan (lender role)                            |
+| POST   | `/api/loans/:loanId/repay` | Process loan repayment (borrower role)               |
+
+### Wallet Management
+
+| Method | Endpoint               | Description                          |
+| ------ | ---------------------- | ------------------------------------ |
+| POST   | `/api/wallet/deposit`  | Deposit funds to wallet via Paystack |
+| POST   | `/api/wallet/withdraw` | Withdraw funds from wallet           |
+
+### Payment Gateway (Paystack Integration)
+
+| Method | Endpoint                        | Description                                     |
+| ------ | ------------------------------- | ----------------------------------------------- |
+| GET    | `/api/paystack/banks`           | Retrieve list of supported banks                |
+| POST   | `/api/paystack/webhook`         | Handle Paystack webhook for transaction updates |
+| POST   | `/api/paystack/resolve-account` | Resolve bank account name for transfers         |
+
+### Key Features of the Unified System:
+
+- **Dashboard Integration**: The `/api/loans/dashboard` endpoint provides a comprehensive view of both borrowing and lending activities
+- **Role Flexibility**: Users can create loans (`/api/loans/create-loan`) and fund others' loans (`/api/loans/:id/fund`) seamlessly
+- **Dual Perspectives**:
+  - `/api/loans/my-loans` shows loans you've applied for (borrower view)
+  - `/api/loans/funded` shows loans you've invested in (lender view)
+  - `/api/loans/open` shows investment opportunities (market view)
+- **Smart Search**: All listing endpoints support pagination and search functionality for efficient data retrieval
+
+The Paystack webhook endpoint (`POST /api/paystack/webhook`) plays a crucial role in maintaining eventual consistency for user balances, processing real-time payment confirmations for both deposits and loan-related transactions.
 
 ## Setup & Installation
 
@@ -118,4 +165,47 @@ Follow these steps to set up the development environment:
    npm test
    ```
 
-The API will be available at `http://localhost:3000`, with Swagger documentation at `http://localhost:3000/api-docs`.
+The API will be available at `http://localhost:8000`, with comprehensive Swagger documentation at `http://localhost:8000/api-docs`.
+
+## Unified P2P Architecture
+
+This platform implements a **unified peer-to-peer lending model** that eliminates traditional role barriers:
+
+### Traditional vs. Unified Model
+
+**Traditional P2P Platforms:**
+
+- Separate borrower and lender accounts
+- Static role assignment at registration
+- Limited flexibility to switch roles
+- Fragmented user experience
+
+**Our Unified Model:**
+
+- Single user account for all activities
+- Dynamic role switching based on actions
+- Comprehensive dashboard showing both perspectives
+- Seamless transition between borrowing and lending
+
+### User Journey Examples
+
+**As a Borrower:**
+
+1. User creates account → `/api/auth/signup`
+2. Complete profile → `/api/user/profile`
+3. Create loan request → `/api/loans/create-loan`
+4. Monitor application status → `/api/loans/my-loans`
+5. Receive funds and make repayments → `/api/loans/:loanId/repay`
+
+**As a Lender (Same User):**
+
+1. Browse investment opportunities → `/api/loans/open`
+2. Fund attractive loans → `/api/loans/:id/fund`
+3. Track investment performance → `/api/loans/funded`
+4. View returns and transaction history → `/api/user/transactions`
+
+**Unified Dashboard:**
+
+- View both borrowing and lending activities in one place → `/api/loans/dashboard`
+- Track overall financial performance across all roles
+- Make informed decisions based on complete financial picture
