@@ -1,20 +1,9 @@
-import { Router } from "express";
-import {
-  forgotPassword,
-  login,
-  resetPassword,
-  sendVerificationEmail,
-  signup,
-  verifyEmail,
-} from "../controllers/authController";
-import { 
-  authRateLimit, 
-  passwordResetRateLimit, 
-  emailVerificationRateLimit 
-} from "../middleware/rateLimiting";
-
-const router = Router();
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const authController_1 = require("../controllers/authController");
+const rateLimiting_1 = require("../middleware/rateLimiting");
+const router = (0, express_1.Router)();
 /**
  * @swagger
  * /api/auth/signup:
@@ -71,8 +60,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/signup", authRateLimit, signup);
-
+router.post("/signup", rateLimiting_1.authRateLimit, authController_1.signup);
 /**
  * @swagger
  * /api/auth/login:
@@ -102,8 +90,7 @@ router.post("/signup", authRateLimit, signup);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/login", authRateLimit, login);
-
+router.post("/login", rateLimiting_1.authRateLimit, authController_1.login);
 /**
  * @swagger
  * /api/auth/verify-email/{token}:
@@ -132,8 +119,7 @@ router.post("/login", authRateLimit, login);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/verify-email/:token", emailVerificationRateLimit, verifyEmail);
-
+router.get("/verify-email/:token", rateLimiting_1.emailVerificationRateLimit, authController_1.verifyEmail);
 /**
  * @swagger
  * /api/auth/resend-verification:
@@ -173,8 +159,7 @@ router.get("/verify-email/:token", emailVerificationRateLimit, verifyEmail);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/resend-verification", emailVerificationRateLimit, sendVerificationEmail);
-
+router.post("/resend-verification", rateLimiting_1.emailVerificationRateLimit, authController_1.sendVerificationEmail);
 /**
  * @swagger
  * /api/auth/forgot-password:
@@ -208,8 +193,7 @@ router.post("/resend-verification", emailVerificationRateLimit, sendVerification
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/forgot-password", passwordResetRateLimit, forgotPassword);
-
+router.post("/forgot-password", rateLimiting_1.passwordResetRateLimit, authController_1.forgotPassword);
 /**
  * @swagger
  * /api/auth/reset-password:
@@ -247,6 +231,5 @@ router.post("/forgot-password", passwordResetRateLimit, forgotPassword);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/reset-password", passwordResetRateLimit, resetPassword);
-
-export default router;
+router.post("/reset-password", rateLimiting_1.passwordResetRateLimit, authController_1.resetPassword);
+exports.default = router;

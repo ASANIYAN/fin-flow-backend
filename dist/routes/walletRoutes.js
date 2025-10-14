@@ -1,10 +1,10 @@
-import { Router } from "express";
-import { depositFunds, withdrawFunds } from "../controllers/walletController";
-import { authenticateToken } from "../middleware/authMiddleware";
-import { financialRateLimit } from "../middleware/rateLimiting";
-
-const router = Router();
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const walletController_1 = require("../controllers/walletController");
+const authMiddleware_1 = require("../middleware/authMiddleware");
+const rateLimiting_1 = require("../middleware/rateLimiting");
+const router = (0, express_1.Router)();
 /**
  * @swagger
  * /api/wallet/deposit:
@@ -46,8 +46,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/deposit", financialRateLimit, authenticateToken, depositFunds);
-
+router.post("/deposit", rateLimiting_1.financialRateLimit, authMiddleware_1.authenticateToken, walletController_1.depositFunds);
 /**
  * @swagger
  * /api/wallet/withdraw:
@@ -89,6 +88,5 @@ router.post("/deposit", financialRateLimit, authenticateToken, depositFunds);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/withdraw", financialRateLimit, authenticateToken, withdrawFunds);
-
-export default router;
+router.post("/withdraw", rateLimiting_1.financialRateLimit, authMiddleware_1.authenticateToken, walletController_1.withdrawFunds);
+exports.default = router;

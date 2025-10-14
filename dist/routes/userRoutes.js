@@ -1,38 +1,26 @@
-import { Router, Request, Response } from "express";
-import {
-  getUserProfile,
-  updateUserProfile,
-  getUserTransactions,
-} from "../controllers/userController";
-import {
-  authenticateToken,
-  requireEmailVerification,
-} from "../middleware/authMiddleware";
-import { AuthenticatedRequest } from "../types/auth";
-import { apiRateLimit } from "../middleware/rateLimiting";
-
-const router = Router();
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const userController_1 = require("../controllers/userController");
+const authMiddleware_1 = require("../middleware/authMiddleware");
+const rateLimiting_1 = require("../middleware/rateLimiting");
+const router = (0, express_1.Router)();
 // Wrapper functions to handle type casting for Express routes
-const getUserProfileHandler = (req: Request, res: Response) => {
-  return getUserProfile(req as AuthenticatedRequest, res);
+const getUserProfileHandler = (req, res) => {
+    return (0, userController_1.getUserProfile)(req, res);
 };
-
-const updateUserProfileHandler = (req: Request, res: Response) => {
-  return updateUserProfile(req as AuthenticatedRequest, res);
+const updateUserProfileHandler = (req, res) => {
+    return (0, userController_1.updateUserProfile)(req, res);
 };
-
-const getUserTransactionsHandler = (req: Request, res: Response) => {
-  return getUserTransactions(req as AuthenticatedRequest, res);
+const getUserTransactionsHandler = (req, res) => {
+    return (0, userController_1.getUserTransactions)(req, res);
 };
-
 /**
  * @swagger
  * tags:
  *   name: User
  *   description: User profile and transaction management
  */
-
 /**
  * @swagger
  * /api/user/profile:
@@ -72,14 +60,7 @@ const getUserTransactionsHandler = (req: Request, res: Response) => {
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.get(
-  "/profile",
-  apiRateLimit,
-  authenticateToken,
-  requireEmailVerification,
-  getUserProfileHandler
-);
-
+router.get("/profile", rateLimiting_1.apiRateLimit, authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, getUserProfileHandler);
 /**
  * @swagger
  * /api/user/profile:
@@ -140,14 +121,7 @@ router.get(
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.patch(
-  "/profile",
-  apiRateLimit,
-  authenticateToken,
-  requireEmailVerification,
-  updateUserProfileHandler
-);
-
+router.patch("/profile", rateLimiting_1.apiRateLimit, authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, updateUserProfileHandler);
 /**
  * @swagger
  * /api/user/transactions:
@@ -216,12 +190,5 @@ router.patch(
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.get(
-  "/transactions",
-  apiRateLimit,
-  authenticateToken,
-  requireEmailVerification,
-  getUserTransactionsHandler
-);
-
-export default router;
+router.get("/transactions", rateLimiting_1.apiRateLimit, authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, getUserTransactionsHandler);
+exports.default = router;

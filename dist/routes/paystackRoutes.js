@@ -1,14 +1,9 @@
-import { Router } from "express";
-import {
-  getBanks,
-  handleWebhook,
-  resolveAccountName,
-} from "../controllers/paystackController";
-import { authenticateToken } from "../middleware/authMiddleware";
-import { apiRateLimit, financialRateLimit } from "../middleware/rateLimiting";
-
-const router = Router();
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const paystackController_1 = require("../controllers/paystackController");
+const rateLimiting_1 = require("../middleware/rateLimiting");
+const router = (0, express_1.Router)();
 /**
  * @swagger
  * /api/paystack/banks:
@@ -69,10 +64,8 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/banks", apiRateLimit, getBanks);
-
-router.post("/webhook", handleWebhook);
-
+router.get("/banks", rateLimiting_1.apiRateLimit, paystackController_1.getBanks);
+router.post("/webhook", paystackController_1.handleWebhook);
 /**
  * @swagger
  * /api/paystack/resolve-account:
@@ -131,6 +124,5 @@ router.post("/webhook", handleWebhook);
  *       500:
  *         $ref: '#/components/responses/InternalError'
  */
-router.post("/resolve-account", financialRateLimit, resolveAccountName);
-
-export default router;
+router.post("/resolve-account", rateLimiting_1.financialRateLimit, paystackController_1.resolveAccountName);
+exports.default = router;

@@ -1,23 +1,10 @@
-import { Router } from "express";
-import {
-  authenticateToken,
-  requireEmailVerification,
-} from "../middleware/authMiddleware";
-import {
-  getDashboardData,
-  createLoan,
-  updateLoan,
-  deleteLoan,
-  getMyLoans,
-  fundLoan,
-  getOpenLoans,
-  repayLoan,
-  getFundedLoans,
-} from "../controllers/loanController";
-import { financialRateLimit, apiRateLimit } from "../middleware/rateLimiting";
-
-const router = Router();
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const authMiddleware_1 = require("../middleware/authMiddleware");
+const loanController_1 = require("../controllers/loanController");
+const rateLimiting_1 = require("../middleware/rateLimiting");
+const router = (0, express_1.Router)();
 /**
  * @swagger
  * /api/loans/dashboard:
@@ -62,14 +49,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get(
-  "/dashboard",
-  apiRateLimit,
-  authenticateToken,
-  requireEmailVerification,
-  getDashboardData
-);
-
+router.get("/dashboard", rateLimiting_1.apiRateLimit, authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.getDashboardData);
 /**
  * @swagger
  * /api/loans/create-loan:
@@ -122,14 +102,7 @@ router.get(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post(
-  "/create-loan",
-  financialRateLimit,
-  authenticateToken,
-  requireEmailVerification,
-  createLoan
-);
-
+router.post("/create-loan", rateLimiting_1.financialRateLimit, authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.createLoan);
 /**
  * @swagger
  * /api/loans/{id}/update:
@@ -312,13 +285,7 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.patch(
-  "/:id/update",
-  authenticateToken,
-  requireEmailVerification,
-  updateLoan
-);
-
+router.patch("/:id/update", authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.updateLoan);
 /**
  * @swagger
  * /api/loans/{id}/delete:
@@ -425,14 +392,7 @@ router.patch(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.delete(
-  "/:id/delete",
-  financialRateLimit,
-  authenticateToken,
-  requireEmailVerification,
-  deleteLoan
-);
-
+router.delete("/:id/delete", rateLimiting_1.financialRateLimit, authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.deleteLoan);
 /**
  * @swagger
  * /api/loans/my-loans:
@@ -562,14 +522,7 @@ router.delete(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get(
-  "/my-loans",
-  apiRateLimit,
-  authenticateToken,
-  requireEmailVerification,
-  getMyLoans
-);
-
+router.get("/my-loans", rateLimiting_1.apiRateLimit, authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.getMyLoans);
 /**
  * @swagger
  * /api/loans/{id}/fund:
@@ -632,14 +585,8 @@ router.get(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post(
-  "/:id/fund", // The loan ID is passed as a URL parameter
-  financialRateLimit,
-  authenticateToken,
-  requireEmailVerification,
-  fundLoan
-);
-
+router.post("/:id/fund", // The loan ID is passed as a URL parameter
+rateLimiting_1.financialRateLimit, authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.fundLoan);
 /**
  * @swagger
  * /api/loans/open:
@@ -818,8 +765,7 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/open", apiRateLimit, authenticateToken, requireEmailVerification, getOpenLoans);
-
+router.get("/open", rateLimiting_1.apiRateLimit, authMiddleware_1.authenticateToken, authMiddleware_1.requireEmailVerification, loanController_1.getOpenLoans);
 /**
  * @swagger
  * /api/loans/{loanId}/repay:
@@ -1014,8 +960,7 @@ router.get("/open", apiRateLimit, authenticateToken, requireEmailVerification, g
  *                   error:
  *                     code: "INTERNAL_ERROR"
  */
-router.post("/:loanId/repay", financialRateLimit, authenticateToken, repayLoan);
-
+router.post("/:loanId/repay", rateLimiting_1.financialRateLimit, authMiddleware_1.authenticateToken, loanController_1.repayLoan);
 /**
  * @swagger
  * /api/loans/funded:
@@ -1337,6 +1282,5 @@ router.post("/:loanId/repay", financialRateLimit, authenticateToken, repayLoan);
  *                   error:
  *                     code: "INTERNAL_ERROR"
  */
-router.get("/funded", apiRateLimit, authenticateToken, getFundedLoans);
-
-export default router;
+router.get("/funded", rateLimiting_1.apiRateLimit, authMiddleware_1.authenticateToken, loanController_1.getFundedLoans);
+exports.default = router;

@@ -8,6 +8,7 @@ import { specs } from "./config/swagger";
 import paystackRoutes from "./routes/paystackRoutes";
 import walletRoutes from "./routes/walletRoutes";
 import userRoutes from "./routes/userRoutes";
+import { globalRateLimit, speedLimiter } from "./middleware/rateLimiting";
 
 dotenv.config();
 
@@ -15,6 +16,11 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 app.use(cors());
+
+// Apply global rate limiting first
+app.use(globalRateLimit);
+app.use(speedLimiter);
+
 app.use(express.json());
 // receive raw body for signature verification
 app.use(
