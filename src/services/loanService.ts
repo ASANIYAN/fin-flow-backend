@@ -128,6 +128,7 @@ interface LoanWithDetails {
   amountFunded: number;
   interestRate: number;
   duration: number;
+  durationUnit?: string;
   status: LoanStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -185,6 +186,7 @@ const getActiveLoansByBorrower = async (
     amountFunded: Decimal;
     interestRate: Decimal;
     duration: number;
+    durationUnit: string;
     status: LoanStatus;
     createdAt: Date;
     updatedAt: Date;
@@ -197,6 +199,20 @@ const getActiveLoansByBorrower = async (
       status: {
         in: [LoanStatus.FUNDING, LoanStatus.PENDING],
       },
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      amountRequested: true,
+      amountFunded: true,
+      interestRate: true,
+      duration: true,
+      durationUnit: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      borrowerId: true,
     },
   });
 };
@@ -588,6 +604,7 @@ export const getBorrowerDashboardData = async (
       amountFunded: convertDecimalToNumber(loan.amountFunded),
       interestRate: convertDecimalToNumber(loan.interestRate),
       duration: loan.duration,
+      durationUnit: loan.durationUnit,
       status: loan.status,
       createdAt: loan.createdAt,
       updatedAt: loan.updatedAt,
@@ -918,6 +935,19 @@ export const getAllLoansByBorrower = async (
     skip,
     take: pageSize,
     orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      amountRequested: true,
+      amountFunded: true,
+      interestRate: true,
+      duration: true,
+      durationUnit: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+    },
   });
 
   const totalCount = await prisma.loan.count({ where });
@@ -932,6 +962,7 @@ export const getAllLoansByBorrower = async (
       amountFunded: Decimal;
       interestRate: Decimal;
       duration: number;
+      durationUnit: string;
       status: LoanStatus;
       createdAt: Date;
       updatedAt: Date;
@@ -943,6 +974,7 @@ export const getAllLoansByBorrower = async (
       amountFunded: convertDecimalToNumber(loan.amountFunded),
       interestRate: convertDecimalToNumber(loan.interestRate),
       duration: loan.duration,
+      durationUnit: loan.durationUnit,
       status: loan.status,
       createdAt: loan.createdAt,
       updatedAt: loan.updatedAt,
