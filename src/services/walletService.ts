@@ -87,7 +87,8 @@ export const confirmDepositAttemptService = async (
   });
 
   if (existingTransaction) {
-    throw new Error("Transaction reference has already been processed");
+    return;
+    // throw new Error("Transaction reference has already been processed");
   }
 
   const MAX_RETRIES = 3; // Maximum attempts
