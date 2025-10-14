@@ -837,8 +837,20 @@ export const login = async (req: Request, res: Response) => {
       user: userData,
     });
   } catch (error) {
+    console.error("Login error:", error);
+
+    // Handle specific Prisma errors
+    const err = error as any;
+    if (err?.name === "PrismaClientInitializationError") {
+      return errorResponse(
+        res,
+        500,
+        "Database connection error. Please try again."
+      );
+    }
+
     // Unexpected error during login
-    return errorResponse(res, 500, "An unexpected error occurred", error);
+    return errorResponse(res, 500, "An unexpected error occurred");
   }
 };
 

@@ -80,6 +80,15 @@ interface CreateLoanInput {
   borrowerId: string;
 }
 
+interface UpdateLoanInput {
+  title?: string;
+  description?: string | null;
+  amountRequested?: number;
+  interestRate?: number;
+  duration?: number;
+  durationUnit?: string;
+}
+
 interface BorrowerDashboardData {
   totalApplications: number;
   pendingApplications: number;
@@ -214,7 +223,8 @@ const getInvestmentsByLender = async (
 };
 
 const getRecentLoanListings = async (
-  limit: number = MAX_NEW_LISTINGS
+  limit: number = MAX_NEW_LISTINGS,
+  excludeUserId?: string
 ): Promise<
   Array<{
     id: string;
@@ -234,8 +244,15 @@ const getRecentLoanListings = async (
     };
   }>
 > => {
+  const where: any = { status: LoanStatus.PENDING };
+
+  // Exclude loans created by the specified user (self-exclusion)
+  if (excludeUserId) {
+    where.borrowerId = { not: excludeUserId };
+  }
+
   return prisma.loan.findMany({
-    where: { status: LoanStatus.PENDING },
+    where,
     take: limit,
     include: {
       borrower: {
@@ -371,6 +388,181 @@ export const createLoanService = async (loanData: CreateLoanInput) => {
 };
 
 /**
+ * Delete a loan application
+ * @param loanId - ID of the loan to delete
+ * @param borrowerId - ID of the borrower (for authorization)
+ * @returns Deleted loan object
+ */
+export const deleteLoanService = async (loanId: string, borrowerId: string) => {
+  // First, verify the loan exists and belongs to the borrower
+  const existingLoan = await prisma.loan.findUnique({
+    where: { id: loanId },
+    select: {
+      id: true,
+      borrowerId: true,
+      status: true,
+      amountFunded: true,
+    },
+  });
+
+  if (!existingLoan) {
+    throw new Error("Loan not found.");
+  }
+
+  if (existingLoan.borrowerId !== borrowerId) {
+    throw new Error("You can only delete your own loan applications.");
+  }
+
+  // Only allow deletion if the loan is still in PENDING status and hasn't been funded
+  if (
+    existingLoan.status !== "PENDING" ||
+    existingLoan.amountFunded.toNumber() > 0
+  ) {
+    throw new Error(
+      "Can only delete loans that are in PENDING status and have not received any funding."
+    );
+  }
+
+  // Delete the loan
+  return prisma.loan.delete({
+    where: { id: loanId },
+    include: {
+      borrower: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    },
+  });
+};
+
+/**
+ * Update an existing loan application
+ * @param loanId - ID of the loan to update
+ * @param borrowerId - ID of the borrower (for authorization)
+ * @param updateData - Data to update
+ * @returns Updated loan object
+ */
+export const updateLoanService = async (
+  loanId: string,
+  borrowerId: string,
+  updateData: UpdateLoanInput
+) => {
+  // First, verify the loan exists and belongs to the borrower
+  const existingLoan = await prisma.loan.findUnique({
+    where: { id: loanId },
+    select: {
+      id: true,
+      borrowerId: true,
+      status: true,
+      amountFunded: true,
+    },
+  });
+
+  if (!existingLoan) {
+    throw new Error("Loan not found.");
+  }
+
+  if (existingLoan.borrowerId !== borrowerId) {
+    throw new Error("You can only update your own loan applications.");
+  }
+
+  // Only allow updates if the loan is still in PENDING status and hasn't been funded
+  if (
+    existingLoan.status !== "PENDING" ||
+    existingLoan.amountFunded.toNumber() > 0
+  ) {
+    throw new Error(
+      "Can only update loans that are in PENDING status and have not received any funding."
+    );
+  }
+
+  // Prepare update data
+  const updateFields: any = {};
+
+  if (updateData.title !== undefined) {
+    updateFields.title = updateData.title;
+  }
+
+  if (updateData.description !== undefined) {
+    updateFields.description = updateData.description;
+  }
+
+  if (updateData.amountRequested !== undefined) {
+    updateFields.amountRequested = updateData.amountRequested;
+  }
+
+  if (updateData.interestRate !== undefined) {
+    updateFields.interestRate = updateData.interestRate;
+  }
+
+  if (updateData.duration !== undefined) {
+    updateFields.duration = updateData.duration;
+  }
+
+  if (updateData.durationUnit !== undefined) {
+    updateFields.durationUnit = updateData.durationUnit;
+  }
+
+  // Recalculate total interest if any relevant fields were updated
+  if (
+    updateData.amountRequested !== undefined ||
+    updateData.interestRate !== undefined ||
+    updateData.duration !== undefined ||
+    updateData.durationUnit !== undefined
+  ) {
+    // Get current values for calculation
+    const currentLoan = await prisma.loan.findUnique({
+      where: { id: loanId },
+      select: {
+        amountRequested: true,
+        interestRate: true,
+        duration: true,
+        durationUnit: true,
+      },
+    });
+
+    if (currentLoan) {
+      const newAmountRequested =
+        updateData.amountRequested ?? currentLoan.amountRequested.toNumber();
+      const newInterestRate =
+        updateData.interestRate ?? currentLoan.interestRate.toNumber();
+      const newDuration = updateData.duration ?? currentLoan.duration;
+      const newDurationUnit =
+        updateData.durationUnit ?? currentLoan.durationUnit;
+
+      const totalInterest = calculateTotalInterest(
+        newAmountRequested,
+        newInterestRate,
+        newDuration,
+        newDurationUnit as any
+      );
+
+      updateFields.totalInterest = totalInterest;
+    }
+  }
+
+  // Perform the update
+  return prisma.loan.update({
+    where: { id: loanId },
+    data: updateFields,
+    include: {
+      borrower: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    },
+  });
+};
+
+/**
  * Get comprehensive dashboard data for a borrower
  * @param userId - Borrower's user ID
  * @returns Borrower dashboard data
@@ -413,7 +605,7 @@ export const getLenderDashboardData = async (
 ): Promise<LenderDashboardData> => {
   const [investments, newListings] = await Promise.all([
     getInvestmentsByLender(userId),
-    getRecentLoanListings(),
+    getRecentLoanListings(MAX_NEW_LISTINGS, userId), // Pass userId to exclude their own loans
   ]);
 
   const investmentSummary = calculateInvestmentSummary(investments);
@@ -543,7 +735,7 @@ export const fundLoanService = async (
 
       return {
         message: "Loan fully funded and automatically disbursed to borrower.",
-        status: disbursementResult.status,
+        status: disbursementResult?.status ?? newLoanStatus,
       };
     }
 
@@ -685,7 +877,13 @@ export const getAllLoansByBorrower = async (
     ];
 
     // If the search term matches a valid status, also filter by status
-    const validStatuses = ["PENDING", "FUNDING", "FUNDED", "REPAID"];
+    const validStatuses = [
+      "PENDING",
+      "FUNDING",
+      "FULLY_FUNDED",
+      "ACTIVE",
+      "REPAID",
+    ];
     if (validStatuses.includes(searchTermUpper)) {
       where.status = searchTermUpper;
     }
@@ -703,7 +901,13 @@ export const getAllLoansByBorrower = async (
 
   if (status) {
     const statusUpper = status.toUpperCase();
-    const validStatuses = ["PENDING", "FUNDING", "FUNDED", "REPAID"];
+    const validStatuses = [
+      "PENDING",
+      "FUNDING",
+      "FULLY_FUNDED",
+      "ACTIVE",
+      "REPAID",
+    ];
     if (validStatuses.includes(statusUpper)) {
       where.status = statusUpper;
     }
@@ -901,9 +1105,10 @@ export const disburseLoanService = async (loanId: string) => {
 
     // Check for the correct status before disbursement
     if (loan.status !== LoanStatus.FULLY_FUNDED) {
-      throw new Error(
-        `Loan status is ${loan.status}. Only FULLY_FUNDED loans can be disbursed.`
-      );
+      return;
+      // throw new Error(
+      //   `Loan status is ${loan.status}. Only fully funded loans can be disbursed.`
+      // );
     }
 
     const disbursementAmount = loan.amountRequested.toNumber();

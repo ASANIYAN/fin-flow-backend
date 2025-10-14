@@ -3,12 +3,13 @@
 import { Request, Response } from "express";
 import {
   createLoanService,
+  updateLoanService,
+  deleteLoanService,
   fundLoanService,
   getBorrowerDashboardData,
   getLenderDashboardData,
   getOpenLoansService,
   getAllLoansByBorrower,
-  getMyLoans as getMyLoansService,
   repayLoanService,
   getFundedLoansByLenderService,
 } from "../services/loanService";
@@ -167,6 +168,210 @@ export const createLoan = async (req: Request, res: Response) => {
   }
 };
 
+export const deleteLoan = async (req: Request, res: Response) => {
+  const user = (req as AuthenticatedRequest).user;
+  const { id } = req.params;
+
+  try {
+    const deletedLoan = await deleteLoanService(id, user.id);
+
+    return successResponse(
+      res,
+      200,
+      "Loan application deleted successfully.",
+      deletedLoan
+    );
+  } catch (error) {
+    // Error deleting loan
+    if (error instanceof Error) {
+      if (error.message === "Loan not found.") {
+        return errorResponse(res, 404, error.message);
+      }
+      if (
+        error.message === "You can only delete your own loan applications." ||
+        error.message.includes(
+          "Can only delete loans that are in PENDING status"
+        )
+      ) {
+        return errorResponse(res, 400, error.message);
+      }
+    }
+
+    // Handle custom validation errors from service
+    if (error && typeof error === "object" && "code" in error) {
+      const customError = error as any;
+      if (customError.code === "BAD_REQUEST") {
+        return errorResponse(res, 400, customError.message, {
+          code: customError.code,
+          details: customError.details,
+        });
+      }
+    }
+
+    // This catches genuine, unhandled server errors
+    return errorResponse(res, 500, "An unexpected error occurred.");
+  }
+};
+
+export const updateLoan = async (req: Request, res: Response) => {
+  const user = (req as AuthenticatedRequest).user;
+  const { id } = req.params;
+  const {
+    title,
+    description,
+    amountRequested,
+    interestRate,
+    duration,
+    durationUnit,
+  } = req.body;
+
+  // Define validation schema for loan update (all fields optional)
+  const loanUpdateValidationSchema: ValidationSchema = {
+    title: {
+      type: "string",
+      required: false,
+      minLength: 1,
+      maxLength: 100,
+    },
+    description: {
+      type: "string",
+      required: false,
+      maxLength: 500,
+    },
+    amountRequested: {
+      type: "number",
+      required: false,
+      min: 0.01,
+      max: 1000000,
+    },
+    interestRate: {
+      type: "number",
+      required: false,
+      min: 0,
+      max: 100,
+    },
+    duration: {
+      type: "number",
+      required: false,
+      min: 1,
+      max: 1000,
+    },
+    durationUnit: {
+      type: "string",
+      required: false,
+      enum: ["DAYS", "WEEKS", "MONTHS", "YEARS"],
+    },
+  };
+
+  // 1. Validate request data
+  if (!validateAndRespond(req.body, loanUpdateValidationSchema, res)) {
+    return;
+  }
+
+  // 2. Data Preparation (Casting for numeric fields if provided)
+  try {
+    const updateData: any = {};
+
+    if (title !== undefined) {
+      updateData.title = title;
+    }
+
+    if (description !== undefined) {
+      updateData.description = description;
+    }
+
+    if (amountRequested !== undefined) {
+      const numericAmountRequested = parseFloat(amountRequested);
+      if (isNaN(numericAmountRequested)) {
+        return errorResponse(
+          res,
+          400,
+          "Validation error: Invalid numeric format for amountRequested.",
+          { code: "CASTING_ERROR" }
+        );
+      }
+      updateData.amountRequested = numericAmountRequested;
+    }
+
+    if (interestRate !== undefined) {
+      const numericInterestRate = parseFloat(interestRate);
+      if (isNaN(numericInterestRate)) {
+        return errorResponse(
+          res,
+          400,
+          "Validation error: Invalid numeric format for interestRate.",
+          { code: "CASTING_ERROR" }
+        );
+      }
+      updateData.interestRate = numericInterestRate;
+    }
+
+    if (duration !== undefined) {
+      const integerDuration = parseInt(duration, 10);
+      if (isNaN(integerDuration)) {
+        return errorResponse(
+          res,
+          400,
+          "Validation error: Invalid numeric format for duration.",
+          { code: "CASTING_ERROR" }
+        );
+      }
+      updateData.duration = integerDuration;
+    }
+
+    if (durationUnit !== undefined) {
+      updateData.durationUnit = durationUnit;
+    }
+
+    // Check if at least one field is being updated
+    if (Object.keys(updateData).length === 0) {
+      return errorResponse(
+        res,
+        400,
+        "At least one field must be provided for update."
+      );
+    }
+
+    const updatedLoan = await updateLoanService(id, user.id, updateData);
+
+    return successResponse(
+      res,
+      200,
+      "Loan application updated successfully.",
+      updatedLoan
+    );
+  } catch (error) {
+    // Error updating loan
+    if (error instanceof Error) {
+      if (error.message === "Loan not found.") {
+        return errorResponse(res, 404, error.message);
+      }
+      if (
+        error.message === "You can only update your own loan applications." ||
+        error.message.includes(
+          "Can only update loans that are in PENDING status"
+        )
+      ) {
+        return errorResponse(res, 400, error.message);
+      }
+    }
+
+    // Handle custom validation errors from service
+    if (error && typeof error === "object" && "code" in error) {
+      const customError = error as any;
+      if (customError.code === "BAD_REQUEST") {
+        return errorResponse(res, 400, customError.message, {
+          code: customError.code,
+          details: customError.details,
+        });
+      }
+    }
+
+    // This catches genuine, unhandled server errors
+    return errorResponse(res, 500, "An unexpected error occurred.");
+  }
+};
+
 export const fundLoan = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { amount } = req.body;
@@ -319,7 +524,7 @@ export const getOpenLoans = async (req: Request, res: Response) => {
     const { loans, totalCount, totalPages } = await getOpenLoansService(
       pageNumber,
       size,
-      user.id, // Add userId for self-exclusion
+      user.id, // userId for self-exclusion
       query,
       min,
       max,

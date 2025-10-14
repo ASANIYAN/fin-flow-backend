@@ -6,6 +6,8 @@ import {
 import {
   getDashboardData,
   createLoan,
+  updateLoan,
+  deleteLoan,
   getMyLoans,
   fundLoan,
   getOpenLoans,
@@ -123,6 +125,308 @@ router.post(
   authenticateToken,
   requireEmailVerification,
   createLoan
+);
+
+/**
+ * @swagger
+ * /api/loans/{id}/update:
+ *   patch:
+ *     summary: Update an existing loan application
+ *     tags: [Loans]
+ *     security:
+ *       - BearerAuth: []
+ *     description: Update a loan application. Only the loan creator can update their loan, and only if it's in PENDING status with no funding received.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Loan ID to update
+ *         example: "123e4567-e89b-12d3-a456-426614174001"
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 minLength: 1
+ *                 maxLength: 100
+ *                 description: Loan title
+ *                 example: "Updated Business Expansion Loan"
+ *               description:
+ *                 type: string
+ *                 maxLength: 500
+ *                 nullable: true
+ *                 description: Loan description
+ *                 example: "Updated description for expanding my restaurant business to a new location"
+ *               amountRequested:
+ *                 type: number
+ *                 minimum: 0.01
+ *                 maximum: 1000000
+ *                 description: Amount requested for the loan
+ *                 example: 75000
+ *               interestRate:
+ *                 type: number
+ *                 minimum: 0
+ *                 maximum: 100
+ *                 description: Annual interest rate percentage
+ *                 example: 15.5
+ *               duration:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 1000
+ *                 description: Loan duration
+ *                 example: 36
+ *               durationUnit:
+ *                 type: string
+ *                 enum: [DAYS, WEEKS, MONTHS, YEARS]
+ *                 description: Duration unit
+ *                 example: "MONTHS"
+ *             additionalProperties: false
+ *           examples:
+ *             updateAmount:
+ *               summary: Update loan amount and interest rate
+ *               value:
+ *                 amountRequested: 75000
+ *                 interestRate: 15.5
+ *             updateTitle:
+ *               summary: Update title and description
+ *               value:
+ *                 title: "Updated Business Expansion Loan"
+ *                 description: "Updated description for expanding my restaurant business"
+ *             updateDuration:
+ *               summary: Update loan duration
+ *               value:
+ *                 duration: 36
+ *                 durationUnit: "MONTHS"
+ *     responses:
+ *       200:
+ *         description: Loan updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Loan application updated successfully."
+ *                 data:
+ *                   $ref: '#/components/schemas/Loan'
+ *             examples:
+ *               success:
+ *                 summary: Successful update response
+ *                 value:
+ *                   success: true
+ *                   message: "Loan application updated successfully."
+ *                   data:
+ *                     id: "123e4567-e89b-12d3-a456-426614174001"
+ *                     title: "Updated Business Expansion Loan"
+ *                     description: "Updated description for expanding my restaurant business"
+ *                     amountRequested: 75000
+ *                     amountFunded: 0
+ *                     interestRate: 15.5
+ *                     duration: 36
+ *                     durationUnit: "MONTHS"
+ *                     totalInterest: 33750.0
+ *                     status: "PENDING"
+ *                     borrower:
+ *                       id: "123e4567-e89b-12d3-a456-426614174000"
+ *                       firstName: "John"
+ *                       lastName: "Doe"
+ *                       email: "john.doe@example.com"
+ *                     createdAt: "2024-09-15T10:30:00.000Z"
+ *                     updatedAt: "2024-09-20T14:15:00.000Z"
+ *       400:
+ *         description: Bad request - validation error, unauthorized update, or loan cannot be updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               validationError:
+ *                 summary: Validation error
+ *                 value:
+ *                   success: false
+ *                   message: "Validation failed for fields: amountRequested"
+ *                   error:
+ *                     code: "VALIDATION_ERROR"
+ *                     fields:
+ *                       - field: "amountRequested"
+ *                         message: "amountRequested must be greater than 0.01"
+ *                         expectedType: "number"
+ *                         receivedType: "number"
+ *               notUpdatable:
+ *                 summary: Loan cannot be updated
+ *                 value:
+ *                   success: false
+ *                   message: "Can only update loans that are in PENDING status and have not received any funding."
+ *               noFields:
+ *                 summary: No fields to update
+ *                 value:
+ *                   success: false
+ *                   message: "At least one field must be provided for update."
+ *               unauthorized:
+ *                 summary: Unauthorized update attempt
+ *                 value:
+ *                   success: false
+ *                   message: "You can only update your own loan applications."
+ *       401:
+ *         description: Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Email verification required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Loan not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               notFound:
+ *                 summary: Loan not found
+ *                 value:
+ *                   success: false
+ *                   message: "Loan not found."
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.patch(
+  "/:id/update",
+  authenticateToken,
+  requireEmailVerification,
+  updateLoan
+);
+
+/**
+ * @swagger
+ * /api/loans/{id}/delete:
+ *   delete:
+ *     summary: Delete a loan application
+ *     tags: [Loans]
+ *     security:
+ *       - BearerAuth: []
+ *     description: Delete a loan application. Only the loan creator can delete their loan, and only if it's in PENDING status with no funding received.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Loan ID to delete
+ *         example: "123e4567-e89b-12d3-a456-426614174001"
+ *     responses:
+ *       200:
+ *         description: Loan deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Loan application deleted successfully."
+ *                 data:
+ *                   $ref: '#/components/schemas/Loan'
+ *             examples:
+ *               success:
+ *                 summary: Successful deletion response
+ *                 value:
+ *                   success: true
+ *                   message: "Loan application deleted successfully."
+ *                   data:
+ *                     id: "123e4567-e89b-12d3-a456-426614174001"
+ *                     title: "Business Expansion Loan"
+ *                     description: "Loan for expanding my restaurant business"
+ *                     amountRequested: 50000
+ *                     amountFunded: 0
+ *                     interestRate: 12.5
+ *                     duration: 24
+ *                     durationUnit: "MONTHS"
+ *                     totalInterest: 12500.0
+ *                     status: "PENDING"
+ *                     borrower:
+ *                       id: "123e4567-e89b-12d3-a456-426614174000"
+ *                       firstName: "John"
+ *                       lastName: "Doe"
+ *                       email: "john.doe@example.com"
+ *                     createdAt: "2024-09-15T10:30:00.000Z"
+ *                     updatedAt: "2024-09-20T14:15:00.000Z"
+ *       400:
+ *         description: Bad request - unauthorized deletion or loan cannot be deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               notDeletable:
+ *                 summary: Loan cannot be deleted
+ *                 value:
+ *                   success: false
+ *                   message: "Can only delete loans that are in PENDING status and have not received any funding."
+ *               unauthorized:
+ *                 summary: Unauthorized deletion attempt
+ *                 value:
+ *                   success: false
+ *                   message: "You can only delete your own loan applications."
+ *       401:
+ *         description: Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Email verification required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Loan not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               notFound:
+ *                 summary: Loan not found
+ *                 value:
+ *                   success: false
+ *                   message: "Loan not found."
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.delete(
+  "/:id/delete",
+  authenticateToken,
+  requireEmailVerification,
+  deleteLoan
 );
 
 /**

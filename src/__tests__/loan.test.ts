@@ -319,6 +319,119 @@ describe("Loan Endpoints", () => {
     });
   });
 
+  describe("DELETE /api/loans/:id/delete", () => {
+    let deletableLoanId: string;
+
+    beforeEach(async () => {
+      // Create a test loan specifically for deletion tests
+      const loan = await prisma.loan.create({
+        data: {
+          title: "Deletable Loan",
+          description: "A loan that can be deleted",
+          amountRequested: 5000,
+          interestRate: 10,
+          duration: 12,
+          durationUnit: "MONTHS",
+          totalInterest: 500,
+          borrowerId: borrowerId,
+          status: "PENDING",
+          amountFunded: 0,
+        },
+      });
+      deletableLoanId = loan.id;
+    });
+
+    it("should delete loan successfully by owner", async () => {
+      const res = await request(app)
+        .delete(`/api/loans/${deletableLoanId}/delete`)
+        .set("Authorization", `Bearer ${borrowerToken}`);
+
+      expect(res.statusCode).toEqual(200);
+      expect(res.body).toHaveProperty("success", true);
+      expect(res.body).toHaveProperty(
+        "message",
+        "Loan application deleted successfully."
+      );
+      expect(res.body.data).toHaveProperty("id", deletableLoanId);
+
+      // Verify loan is actually deleted from database
+      const deletedLoan = await prisma.loan.findUnique({
+        where: { id: deletableLoanId },
+      });
+      expect(deletedLoan).toBeNull();
+    });
+
+    it("should reject deletion by non-owner", async () => {
+      const res = await request(app)
+        .delete(`/api/loans/${deletableLoanId}/delete`)
+        .set("Authorization", `Bearer ${lenderToken}`);
+
+      expect(res.statusCode).toEqual(400);
+      expect(res.body).toHaveProperty("success", false);
+      expect(res.body).toHaveProperty(
+        "message",
+        "You can only delete your own loan applications."
+      );
+    });
+
+    it("should reject deletion of non-existent loan", async () => {
+      const nonExistentId = "123e4567-e89b-12d3-a456-426614174999";
+
+      const res = await request(app)
+        .delete(`/api/loans/${nonExistentId}/delete`)
+        .set("Authorization", `Bearer ${borrowerToken}`);
+
+      expect(res.statusCode).toEqual(404);
+      expect(res.body).toHaveProperty("success", false);
+      expect(res.body).toHaveProperty("message", "Loan not found.");
+    });
+
+    it("should reject deletion of funded loan", async () => {
+      // Update the loan to have some funding
+      await prisma.loan.update({
+        where: { id: deletableLoanId },
+        data: { amountFunded: 1000 },
+      });
+
+      const res = await request(app)
+        .delete(`/api/loans/${deletableLoanId}/delete`)
+        .set("Authorization", `Bearer ${borrowerToken}`);
+
+      expect(res.statusCode).toEqual(400);
+      expect(res.body).toHaveProperty("success", false);
+      expect(res.body.message).toContain(
+        "Can only delete loans that are in PENDING status and have not received any funding"
+      );
+    });
+
+    it("should reject deletion of non-pending loan", async () => {
+      // Update the loan status to something other than PENDING
+      await prisma.loan.update({
+        where: { id: deletableLoanId },
+        data: { status: "FUNDING" },
+      });
+
+      const res = await request(app)
+        .delete(`/api/loans/${deletableLoanId}/delete`)
+        .set("Authorization", `Bearer ${borrowerToken}`);
+
+      expect(res.statusCode).toEqual(400);
+      expect(res.body).toHaveProperty("success", false);
+      expect(res.body.message).toContain(
+        "Can only delete loans that are in PENDING status and have not received any funding"
+      );
+    });
+
+    it("should require authentication", async () => {
+      const res = await request(app).delete(
+        `/api/loans/${deletableLoanId}/delete`
+      );
+
+      expect(res.statusCode).toEqual(401);
+      expect(res.body).toHaveProperty("success", false);
+    });
+  });
+
   afterAll(async () => {
     await prisma.$disconnect();
   });
