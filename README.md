@@ -60,7 +60,6 @@ A secure and scalable peer-to-peer lending platform API built with Node.js, Type
 ### Payments
 
 - `GET /api/paystack/banks` - Get bank list
-- `POST /api/paystack/webhook` - Payment webhook
 - `POST /api/paystack/resolve-account` - Resolve bank account
 
 ## Setup & Installation
