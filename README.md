@@ -107,10 +107,6 @@ A secure and scalable peer-to-peer lending platform API built with Node.js, Type
 
 The API will be available at `http://localhost:8000` with documentation at `http://localhost:8000/api-docs`.
 
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
 ## Support
 
 - **Repository**: [GitHub](https://github.com/ASANIYAN/fin-flow-backend)
