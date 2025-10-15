@@ -818,7 +818,13 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/open", apiRateLimit, authenticateToken, requireEmailVerification, getOpenLoans);
+router.get(
+  "/open",
+  apiRateLimit,
+  authenticateToken,
+  requireEmailVerification,
+  getOpenLoans
+);
 
 /**
  * @swagger

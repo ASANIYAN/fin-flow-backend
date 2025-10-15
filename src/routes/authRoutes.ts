@@ -7,10 +7,10 @@ import {
   signup,
   verifyEmail,
 } from "../controllers/authController";
-import { 
-  authRateLimit, 
-  passwordResetRateLimit, 
-  emailVerificationRateLimit 
+import {
+  authRateLimit,
+  passwordResetRateLimit,
+  emailVerificationRateLimit,
 } from "../middleware/rateLimiting";
 
 const router = Router();
@@ -173,7 +173,11 @@ router.get("/verify-email/:token", emailVerificationRateLimit, verifyEmail);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/resend-verification", emailVerificationRateLimit, sendVerificationEmail);
+router.post(
+  "/resend-verification",
+  emailVerificationRateLimit,
+  sendVerificationEmail
+);
 
 /**
  * @swagger
