@@ -28,7 +28,7 @@ app.use(
     verify: (req, res, buf) => {
       (req as any).rawBody = buf;
     },
-  })
+  }),
 );
 
 // Swagger Documentation Route
@@ -44,12 +44,10 @@ app.get("/", (req, res) => {
   res.status(200).json({ message: "Welcome to Finflow API!" });
 });
 
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
-  });
-}
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`API Documentation: http://localhost:${PORT}/api-docs`);
+});
 
 // Export the app for testing purposes
 export default app;
